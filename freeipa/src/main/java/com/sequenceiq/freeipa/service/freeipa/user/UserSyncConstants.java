@@ -1,11 +1,15 @@
 package com.sequenceiq.freeipa.service.freeipa.user;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.sequenceiq.authorization.resource.AuthorizationResourceAction;
-
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.sequenceiq.authorization.resource.AuthorizationResourceAction;
+import com.sequenceiq.cloudbreak.auth.altus.UmsRight;
 
 public final class UserSyncConstants {
 
@@ -15,13 +19,17 @@ public final class UserSyncConstants {
 
     public static final Set<String> NON_POSIX_GROUPS = ImmutableSet.of(CDP_USERSYNC_INTERNAL_GROUP);
 
-    public static final String ACCESS_ENVIRONMENT =
-            AuthorizationResourceAction.ACCESS_ENVIRONMENT.getRight();
-
     public static final String ADMIN_FREEIPA =
             AuthorizationResourceAction.ADMIN_FREEIPA.getRight();
 
-    public static final List<String> RIGHTS = ImmutableList.of(ACCESS_ENVIRONMENT, ADMIN_FREEIPA);
+    public static final List<String> RIGHTS;
+
+    static {
+        List<String> rights = Lists.newArrayList();
+        rights.add(ADMIN_FREEIPA);
+        rights.addAll(Arrays.stream(UmsRight.values()).map(right -> right.getRight()).collect(Collectors.toList()));
+        RIGHTS = Collections.unmodifiableList(rights);
+    }
 
     private UserSyncConstants() {
         // private access
