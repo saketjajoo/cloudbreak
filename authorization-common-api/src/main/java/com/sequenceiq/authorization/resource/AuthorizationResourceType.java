@@ -13,5 +13,6 @@ public enum AuthorizationResourceType {
     DATABASE_SERVER,
     RECIPE,
     AUDIT_CREDENTIAL,
-    STRUCTURED_EVENT;
+    STRUCTURED_EVENT,
+    FREEIPA;
 }

@@ -5,9 +5,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.ws.rs.NotFoundException;
-
 public enum AuthorizationResourceAction {
+
     CHANGE_CREDENTIAL("environments/changeCredential", AuthorizationResourceType.ENVIRONMENT),
     EDIT_CREDENTIAL("environments/editCredential", AuthorizationResourceType.CREDENTIAL),
     EDIT_ENVIRONMENT("environments/editEnvironment", AuthorizationResourceType.ENVIRONMENT),
@@ -106,6 +105,13 @@ public enum AuthorizationResourceAction {
     DATAHUB_READ("datahub/read", AuthorizationResourceType.DATAHUB),
     DATAHUB_WRITE("datahub/write", AuthorizationResourceType.DATAHUB);
 
+    public static final String DESCRIBE_ACTION_PREFIX = "DESCRIBE";
+
+    public static final String GET_ACTION_PREFIX = "GET";
+
+    public static final String ADMIN_ACTION_PREFIX = "ADMIN";
+
+    public static final String READ_ACTION_SUFFIX = "READ";
 
     private static final Map<String, List<AuthorizationResourceAction>> BY_RIGHT = Stream.of(AuthorizationResourceAction.values())
             .collect(Collectors.groupingBy(AuthorizationResourceAction::getRight));
@@ -115,8 +121,8 @@ public enum AuthorizationResourceAction {
     private final AuthorizationResourceType authorizationResourceType;
 
     AuthorizationResourceAction(String right, AuthorizationResourceType authorizationResourceType) {
-        this.right = right;
         this.authorizationResourceType = authorizationResourceType;
+        this.right = right;
     }
 
     public String getRight() {
@@ -127,13 +133,20 @@ public enum AuthorizationResourceAction {
         return authorizationResourceType;
     }
 
-    public static AuthorizationResourceAction getByRight(String right) {
-        List<AuthorizationResourceAction> result = BY_RIGHT.get(right);
-        if (result == null || result.isEmpty()) {
-            throw new NotFoundException(String.format("Action not found by right %s", right));
-        } else if (result.size() > 1) {
-            throw new NotFoundException(String.format("Multiple results found by right %s, thus we cannot lookup for action!", right));
-        }
-        return result.get(0);
+    public boolean isDescribeAction() {
+        return name().startsWith(DESCRIBE_ACTION_PREFIX);
     }
+
+    public boolean isGetAction() {
+        return name().contains(GET_ACTION_PREFIX);
+    }
+
+    public boolean isAdminAction() {
+        return name().startsWith(ADMIN_ACTION_PREFIX);
+    }
+
+    public boolean isReadAction() {
+        return name().contains(READ_ACTION_SUFFIX);
+    }
+
 }
