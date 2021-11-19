@@ -1268,6 +1268,16 @@ public class SaltOrchestrator implements HostOrchestrator {
         }
     }
 
+    @Override
+    public void uploadSaltConfig(GatewayConfig gatewayConfig, Set<String> targets, byte[] stateConfigZip, ExitCriteriaModel exitCriteriaModel)
+            throws CloudbreakOrchestratorFailedException, IOException {
+        SaltConnector saltConnector = saltService.createSaltConnector(gatewayConfig);
+        byte[] byteArray;
+        byteArray = stateConfigZip == null || stateConfigZip.length == 0 ? getStateConfigZip() : stateConfigZip;
+        LOGGER.debug("Upload salt.zip to gateways");
+        uploadFileToTargets(saltConnector, targets, exitCriteriaModel, "/srv", "salt.zip", byteArray);
+    }
+
     private void uploadSaltConfig(SaltConnector saltConnector, Set<String> targets, ExitCriteriaModel exitCriteriaModel)
             throws CloudbreakOrchestratorFailedException, IOException {
         uploadSaltConfig(saltConnector, targets, null, exitCriteriaModel);
@@ -1348,5 +1358,11 @@ public class SaltOrchestrator implements HostOrchestrator {
             }
         });
         return new NodeReachabilityResult(responsiveNodes, unresponsiveNodes);
+    }
+
+    @Override
+    public boolean unboundRunningOnCluster(GatewayConfig primaryGateway, Set<Node> nodes) {
+        SaltConnector saltConnector = saltService.createSaltConnector(primaryGateway);
+        return SaltStates.unboundRunningOnCluster(saltConnector, new HostList(nodes.stream().map(node -> node.getHostname()).collect(Collectors.toSet())));
     }
 }
