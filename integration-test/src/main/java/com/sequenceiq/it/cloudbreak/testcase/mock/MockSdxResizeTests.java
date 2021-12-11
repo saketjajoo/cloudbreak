@@ -1,22 +1,19 @@
 package com.sequenceiq.it.cloudbreak.testcase.mock;
 
-import static com.sequenceiq.it.cloudbreak.context.RunningParameter.key;
-
-import javax.inject.Inject;
-
-import org.testng.annotations.Test;
-
 import com.sequenceiq.environment.api.v1.environment.model.EnvironmentNetworkMockParams;
 import com.sequenceiq.environment.api.v1.environment.model.response.EnvironmentStatus;
 import com.sequenceiq.it.cloudbreak.client.SdxTestClient;
 import com.sequenceiq.it.cloudbreak.context.Description;
 import com.sequenceiq.it.cloudbreak.context.MockedTestContext;
+import static com.sequenceiq.it.cloudbreak.context.RunningParameter.key;
 import com.sequenceiq.it.cloudbreak.context.TestContext;
 import com.sequenceiq.it.cloudbreak.dto.environment.EnvironmentNetworkTestDto;
 import com.sequenceiq.it.cloudbreak.dto.environment.EnvironmentTestDto;
 import com.sequenceiq.it.cloudbreak.dto.sdx.SdxInternalTestDto;
 import com.sequenceiq.sdx.api.model.SdxClusterShape;
 import com.sequenceiq.sdx.api.model.SdxClusterStatusResponse;
+import javax.inject.Inject;
+import org.testng.annotations.Test;
 
 public class MockSdxResizeTests extends AbstractMockTest {
 
@@ -52,8 +49,8 @@ public class MockSdxResizeTests extends AbstractMockTest {
     @Test(dataProvider = TEST_CONTEXT_WITH_MOCK)
     @Description(
             given = "there is a running Cloudbreak",
-            when = "a valid SDX Internal Create request is sent",
-            then = "SDX should be available AND deletable"
+            when = "a valid SDX Resize request is sent",
+            then = "Resized SDX should be available AND deletable"
     )
     public void testDefaultSDXResizeSuccessfully(MockedTestContext testContext) {
         testContext
