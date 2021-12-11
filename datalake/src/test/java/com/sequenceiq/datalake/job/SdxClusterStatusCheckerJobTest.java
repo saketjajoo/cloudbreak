@@ -98,6 +98,7 @@ class SdxClusterStatusCheckerJobTest {
 
         sdxCluster = new SdxCluster();
         sdxCluster.setClusterName("data-lake-cluster");
+        sdxCluster.setStackCrn(STACK_ID.toString());
         when(sdxClusterRepository.findById(SDX_ID)).thenReturn(Optional.of(sdxCluster));
 
         stack = new StackStatusV4Response();

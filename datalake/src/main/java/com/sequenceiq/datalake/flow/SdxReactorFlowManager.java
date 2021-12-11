@@ -5,6 +5,7 @@ import static com.sequenceiq.datalake.flow.datalake.recovery.DatalakeUpgradeReco
 import static com.sequenceiq.datalake.flow.datalake.upgrade.DatalakeUpgradeEvent.DATALAKE_UPGRADE_EVENT;
 import static com.sequenceiq.datalake.flow.delete.SdxDeleteEvent.SDX_DELETE_EVENT;
 import static com.sequenceiq.datalake.flow.detach.event.DatalakeResizeFlowChainStartEvent.SDX_RESIZE_FLOW_CHAIN_START_EVENT;
+import static com.sequenceiq.datalake.flow.detach.event.DatalakeResizeRecoveryFlowChainStartEvent.SDX_RESIZE_RECOVERY_FLOW_CHAIN_START_EVENT;
 import static com.sequenceiq.datalake.flow.diagnostics.SdxCmDiagnosticsEvent.SDX_CM_DIAGNOSTICS_COLLECTION_EVENT;
 import static com.sequenceiq.datalake.flow.diagnostics.SdxDiagnosticsEvent.SDX_DIAGNOSTICS_COLLECTION_EVENT;
 import static com.sequenceiq.datalake.flow.dr.backup.DatalakeBackupEvent.DATALAKE_DATABASE_BACKUP_EVENT;
@@ -45,6 +46,7 @@ import com.sequenceiq.datalake.flow.datalake.upgrade.event.DatalakeUpgradeFlowCh
 import com.sequenceiq.datalake.flow.datalake.upgrade.event.DatalakeUpgradeStartEvent;
 import com.sequenceiq.datalake.flow.delete.event.SdxDeleteStartEvent;
 import com.sequenceiq.datalake.flow.detach.event.DatalakeResizeFlowChainStartEvent;
+import com.sequenceiq.datalake.flow.detach.event.DatalakeResizeRecoveryFlowChainStartEvent;
 import com.sequenceiq.datalake.flow.diagnostics.event.SdxCmDiagnosticsCollectionEvent;
 import com.sequenceiq.datalake.flow.diagnostics.event.SdxDiagnosticsCollectionEvent;
 import com.sequenceiq.datalake.flow.dr.backup.event.DatalakeDatabaseBackupStartEvent;
@@ -112,6 +114,14 @@ public class SdxReactorFlowManager {
                 environmentClientService.getBackupLocation(newSdxCluster.getEnvCrn()), performBackup));
     }
 
+    public FlowIdentifier triggerSdxResizeRecovery(SdxCluster oldSdxCluster, SdxCluster newSdxCluster) {
+        LOGGER.info("Triggering recovery for failed SDX resize with original cluster: {} and resized cluster: {}",
+                oldSdxCluster, newSdxCluster);
+        String userId = ThreadBasedUserCrnProvider.getUserCrn();
+        return notify(SDX_RESIZE_RECOVERY_FLOW_CHAIN_START_EVENT,
+                new DatalakeResizeRecoveryFlowChainStartEvent(oldSdxCluster, newSdxCluster, userId));
+    }
+
     public FlowIdentifier triggerSdxDeletion(SdxCluster cluster, boolean forced) {
         LOGGER.info("Trigger Datalake deletion for: {} forced: {}", cluster, forced);
         String selector = SDX_DELETE_EVENT.event();
@@ -154,7 +164,7 @@ public class SdxReactorFlowManager {
      * Uses Cloud storage file system type to find the cloud provider.
      *
      * @param cluster Sdx cluster
-     * @return true if backup can performed, False otherwise.
+     * @return true if backup can be performed, False otherwise.
      */
     private boolean shouldSdxBackupBePerformed(SdxCluster cluster) {
         boolean retVal = true;

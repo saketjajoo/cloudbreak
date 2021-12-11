@@ -14,7 +14,7 @@ public enum SdxDetachState implements FlowState {
     SDX_DETACH_EXTERNAL_DB_STATE,
     SDX_DETACH_EXTERNAL_DB_FAILED_STATE,
     SDX_ATTACH_NEW_CLUSTER_STATE,
-    SDX_ATTACH_NEW_CLUSTER_FAILED_STATE,
+    SDX_DETACH_RECOVERY_STATE,
     FINAL_STATE;
 
     private Class<? extends DefaultRestartAction> restartAction = FillInMemoryStateStoreRestartAction.class;

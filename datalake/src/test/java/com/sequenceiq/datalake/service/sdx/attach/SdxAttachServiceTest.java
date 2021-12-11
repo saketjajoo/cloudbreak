@@ -63,7 +63,6 @@ public class SdxAttachServiceTest {
     @Mock
     private SdxStatusService mockSdxStatusService;
 
-
     @Mock
     private TransactionService mockTransactionService;
 
@@ -126,7 +125,7 @@ public class SdxAttachServiceTest {
     @Test
     void testReattachExternalDatabase() {
         testCluster.setCrn(ORIGINAL_TEST_CLUSTER_CRN);
-        sdxAttachService.reattachExternalDatabase(testCluster, TEST_CLUSTER_CRN);
+        sdxAttachService.reattachExternalDatabase(testCluster, TEST_CLUSTER_CRN, TEST_CLUSTER_NAME);
         verify(mockRedbeamsServerEndpoint).updateClusterCrn(
                 eq(TEST_CLUSTER_ENV_CRN), eq(TEST_CLUSTER_CRN), eq(ORIGINAL_TEST_CLUSTER_CRN), any()
         );

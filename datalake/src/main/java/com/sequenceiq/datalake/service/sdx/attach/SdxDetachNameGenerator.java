@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SdxDetachNameGenerator {
-    private static final String DELIMITER = "-";
-
     static final Pattern DETACHED_NAME_PATTERN = Pattern.compile(".*(-[0-9]+)$");
+
+    private static final String DELIMITER = "-";
 
     String generateDetachedClusterName(String originalName) {
         return originalName + DELIMITER + new Date().getTime();

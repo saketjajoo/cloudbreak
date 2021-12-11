@@ -5,6 +5,8 @@ import static com.sequenceiq.datalake.flow.detach.SdxDetachEvent.SDX_DETACH_CLUS
 import static com.sequenceiq.datalake.flow.detach.SdxDetachEvent.SDX_DETACH_EXTERNAL_DB_SUCCESS_EVENT;
 import static com.sequenceiq.datalake.flow.detach.SdxDetachEvent.SDX_DETACH_FAILED_EVENT;
 import static com.sequenceiq.datalake.flow.detach.SdxDetachEvent.SDX_DETACH_FAILED_HANDLED_EVENT;
+import static com.sequenceiq.datalake.flow.detach.SdxDetachEvent.SDX_DETACH_RECOVERY_FAILURE_HANDLED_EVENT;
+import static com.sequenceiq.datalake.flow.detach.SdxDetachEvent.SDX_DETACH_RECOVERY_SUCCESS_EVENT;
 import static com.sequenceiq.datalake.flow.detach.SdxDetachEvent.SDX_DETACH_STACK_SUCCESS_EVENT;
 import static com.sequenceiq.datalake.flow.detach.SdxDetachEvent.SDX_DETACH_STACK_SUCCESS_WITH_EXTERNAL_DB_EVENT;
 
@@ -20,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.StateContext;
 import org.springframework.statemachine.action.Action;
 
+import com.sequenceiq.cloudbreak.common.exception.NotFoundException;
 import com.sequenceiq.cloudbreak.logger.MDCBuilder;
 import com.sequenceiq.datalake.entity.DatalakeStatusEnum;
 import com.sequenceiq.datalake.entity.SdxCluster;
@@ -27,6 +30,7 @@ import com.sequenceiq.datalake.flow.SdxContext;
 import com.sequenceiq.datalake.flow.SdxEvent;
 import com.sequenceiq.datalake.flow.detach.event.SdxDetachFailedEvent;
 import com.sequenceiq.datalake.flow.detach.event.SdxStartDetachEvent;
+import com.sequenceiq.datalake.flow.detach.event.SdxStartDetachRecoveryEvent;
 import com.sequenceiq.datalake.repository.SdxClusterRepository;
 import com.sequenceiq.datalake.service.AbstractSdxAction;
 import com.sequenceiq.datalake.service.sdx.attach.SdxAttachService;
@@ -68,7 +72,7 @@ public class SdxDetachActions {
 
             @Override
             protected void doExecute(SdxContext context, SdxStartDetachEvent payload,
-                    Map<Object, Object> variables) throws Exception {
+                    Map<Object, Object> variables) {
                 LOGGER.info("Detaching of SDX with ID {} in progress.", payload.getResourceId());
                 variables.put(RESIZED_SDX, payload.getSdxCluster());
                 variables.put(DETACHED_SDX, sdxDetachService.detachCluster(payload.getResourceId()));
@@ -128,7 +132,7 @@ public class SdxDetachActions {
 
             @Override
             protected void doExecute(SdxContext context, SdxDetachFailedEvent payload,
-                    Map<Object, Object> variables) throws Exception {
+                    Map<Object, Object> variables) {
                 SdxCluster detached = (SdxCluster) variables.get(DETACHED_SDX);
                 LOGGER.error("Failed to detach stack of SDX with ID: {}. Attempting to restore it.", detached.getId());
 
@@ -186,7 +190,7 @@ public class SdxDetachActions {
 
             @Override
             protected void doExecute(SdxContext context, SdxDetachFailedEvent payload,
-                    Map<Object, Object> variables) throws Exception {
+                    Map<Object, Object> variables) {
                 SdxCluster detached = (SdxCluster) variables.get(DETACHED_SDX);
                 LOGGER.error("Failed to detach external DB of SDX with ID: {}. Attempting to restore it.", detached.getId());
 
@@ -239,42 +243,47 @@ public class SdxDetachActions {
             @Override
             protected Object getFailurePayload(SdxEvent payload, Optional<SdxContext> flowContext,
                     Exception e) {
-                return SdxDetachFailedEvent.from(payload, e);
+                LOGGER.error("Failed to attach new cluster during detaching of cluster with ID {}.", payload.getResourceId());
+                return new SdxStartDetachRecoveryEvent(payload.getResourceId(), payload.getUserId(), e);
             }
         };
     }
 
-    @Bean(name = "SDX_ATTACH_NEW_CLUSTER_FAILED_STATE")
-    public Action<?, ?> sdxAttachNewClusterFailedAction() {
-        return new AbstractSdxAction<>(SdxDetachFailedEvent.class) {
+    @Bean(name = "SDX_DETACH_RECOVERY_STATE")
+    public Action<?, ?> sdxDetachRecoveryAction() {
+        return new AbstractSdxAction<>(SdxStartDetachRecoveryEvent.class) {
             @Override
             protected SdxContext createFlowContext(FlowParameters flowParameters,
                     StateContext<FlowState, FlowEvent> stateContext,
-                    SdxDetachFailedEvent payload) {
+                    SdxStartDetachRecoveryEvent payload) {
                 return SdxContext.from(flowParameters, payload);
             }
 
             @Override
-            protected void doExecute(SdxContext context, SdxDetachFailedEvent payload,
+            protected void doExecute(SdxContext context, SdxStartDetachRecoveryEvent payload,
                     Map<Object, Object> variables) throws Exception {
-                SdxCluster resized = (SdxCluster) variables.get(RESIZED_SDX);
-                SdxCluster detached = (SdxCluster) variables.get(DETACHED_SDX);
-                LOGGER.error("Failed to attach new cluster with ID {} during detaching of cluster with ID {}." +
-                        " Attempting to reattach detached cluster.", resized.getId(), detached.getId());
-
+                // Reattach detached cluster.
+                SdxCluster detached = sdxClusterRepository.findById(payload.getResourceId())
+                        .orElseThrow(() -> new NotFoundException("SdxCluster was not found for ID: " + payload.getResourceId()));
                 detached = sdxAttachService.reattachDetachedSdxCluster(detached);
+                LOGGER.info("Successfully restored detached SDX with ID {}.", detached.getId());
 
-                LOGGER.info("Successfully restored detached SDX with ID {} which failed during attaching of new cluster.",
-                        detached.getId());
-                sendEvent(context, SDX_DETACH_FAILED_EVENT.event(), payload);
+                // Transition to next step according to if automatic recovery or manual.
+                if (payload.isFailureEvent()) {
+                    sendEvent(
+                            context, SDX_DETACH_RECOVERY_FAILURE_HANDLED_EVENT.event(),
+                            SdxDetachFailedEvent.from(payload, payload.getException())
+                    );
+                } else {
+                    sendEvent(context, SDX_DETACH_RECOVERY_SUCCESS_EVENT.event(), payload);
+                }
             }
 
             @Override
-            protected Object getFailurePayload(SdxDetachFailedEvent payload, Optional<SdxContext> flowContext,
+            protected Object getFailurePayload(SdxStartDetachRecoveryEvent payload, Optional<SdxContext> flowContext,
                     Exception e) {
-                LOGGER.error("Failed to reattach SDX with ID {} which failed during attaching of new cluster.",
-                        payload.getResourceId());
-                return payload;
+                LOGGER.error("Failed to recover from detach of SDX with ID {}.", payload.getResourceId());
+                return SdxDetachFailedEvent.from(payload, e);
             }
         };
     }
@@ -291,7 +300,7 @@ public class SdxDetachActions {
 
             @Override
             protected void doExecute(SdxContext context, SdxDetachFailedEvent payload,
-                    Map<Object, Object> variables) throws Exception {
+                    Map<Object, Object> variables) {
                 Exception exception = payload.getException();
                 LOGGER.error("Detaching SDX cluster with ID {} and name {} failed with error {}.",
                         payload.getResourceId(), payload.getSdxName(), exception.getMessage(), exception);

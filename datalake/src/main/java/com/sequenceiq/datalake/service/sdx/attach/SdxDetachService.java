@@ -45,10 +45,9 @@ public class SdxDetachService {
      */
     public SdxCluster detachCluster(Long sdxID) {
         LOGGER.info("Started detaching SDX cluster with ID: {}.", sdxID);
-        sdxStatusService.setStatusForDatalakeAndNotify(DatalakeStatusEnum.STOPPED, "Datalake detach in progress.", sdxID);
-
         SdxCluster cluster = sdxClusterRepository.findById(sdxID)
                 .orElseThrow(() -> new NotFoundException("SdxCluster was not found for ID: " + sdxID));
+        sdxStatusService.setStatusForDatalakeAndNotify(DatalakeStatusEnum.STOPPED, "Datalake detach in progress.", sdxID);
 
         String originalName = cluster.getClusterName();
         sdxAttachDetachUtils.updateClusterNameAndCrn(
@@ -71,7 +70,7 @@ public class SdxDetachService {
      */
     public void detachStack(SdxCluster cluster, String originalName) throws Exception {
         LOGGER.info("Started detaching stack of SDX cluster with ID: {}.", cluster.getId());
-        sdxAttachDetachUtils.updateStack(cluster, originalName);
+        sdxAttachDetachUtils.updateStack(originalName, cluster.getClusterName(), cluster.getCrn());
         LOGGER.info("Finished detaching stack of SDX cluster with ID: {}.", cluster.getId());
     }
 
