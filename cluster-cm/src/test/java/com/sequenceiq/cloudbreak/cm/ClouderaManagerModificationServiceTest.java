@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -227,7 +228,8 @@ class ClouderaManagerModificationServiceTest {
         instanceMetaData.setDiscoveryFQDN("upscaled");
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaData);
 
-        CloudbreakException exception = assertThrows(CloudbreakException.class, () -> underTest.upscaleCluster(hostGroup, instanceMetaDataList));
+        CloudbreakException exception = assertThrows(CloudbreakException.class, () -> underTest.upscaleCluster(Map.of(hostGroup,
+                new LinkedHashSet<>(instanceMetaDataList))));
 
         assertEquals("Failed to upscale", exception.getMessage());
         assertThat(exception).hasCauseReference(apiException);
@@ -248,7 +250,7 @@ class ClouderaManagerModificationServiceTest {
         instanceMetaData.setDiscoveryFQDN("original");
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaData);
 
-        underTest.upscaleCluster(hostGroup, instanceMetaDataList);
+        underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList)));
 
         verify(clustersResourceApi, never()).addHosts(anyString(), any(ApiHostRefList.class));
         verify(clouderaManagerRoleRefreshService).refreshClusterRoles(apiClientMock, stack);
@@ -273,7 +275,7 @@ class ClouderaManagerModificationServiceTest {
         instanceMetaData.setRackId("/originalRack");
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaData);
 
-        underTest.upscaleCluster(hostGroup, instanceMetaDataList);
+        underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList)));
 
         verify(clustersResourceApi, never()).addHosts(anyString(), any(ApiHostRefList.class));
         verify(clouderaManagerRoleRefreshService).refreshClusterRoles(apiClientMock, stack);
@@ -300,7 +302,7 @@ class ClouderaManagerModificationServiceTest {
         instanceMetaData.setRackId("/originalRack");
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaData);
 
-        underTest.upscaleCluster(hostGroup, instanceMetaDataList);
+        underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList)));
 
         verify(clustersResourceApi, never()).addHosts(anyString(), any(ApiHostRefList.class));
         verify(clouderaManagerRoleRefreshService).refreshClusterRoles(apiClientMock, stack);
@@ -323,7 +325,7 @@ class ClouderaManagerModificationServiceTest {
         instanceMetaData.setDiscoveryFQDN("original");
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaData);
 
-        underTest.upscaleCluster(hostGroup, instanceMetaDataList);
+        underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList)));
 
         verify(clustersResourceApi, never()).addHosts(anyString(), any(ApiHostRefList.class));
         verify(clouderaManagerRoleRefreshService).refreshClusterRoles(apiClientMock, stack);
@@ -342,7 +344,8 @@ class ClouderaManagerModificationServiceTest {
         String exceptionMessage = "Cluster was terminated while waiting for config deploy";
         doThrow(new CancellationException(exceptionMessage)).when(pollingResultErrorHandler).handlePollingResult(eq(exit), any(), any());
 
-        CancellationException exception = assertThrows(CancellationException.class, () -> underTest.upscaleCluster(hostGroup, instanceMetaDataList));
+        CancellationException exception = assertThrows(CancellationException.class,
+                () -> underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList))));
 
         assertEquals(exceptionMessage, exception.getMessage());
 
@@ -375,7 +378,8 @@ class ClouderaManagerModificationServiceTest {
 
         doThrow(new CloudbreakException(exceptionMessage)).when(pollingResultErrorHandler).handlePollingResult(eq(timeout), any(), any());
 
-        CloudbreakException exception = assertThrows(CloudbreakException.class, () -> underTest.upscaleCluster(hostGroup, instanceMetaDataList));
+        CloudbreakException exception = assertThrows(CloudbreakException.class,
+                () -> underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList))));
 
         assertEquals(exceptionMessage, exception.getMessage());
 
@@ -410,7 +414,7 @@ class ClouderaManagerModificationServiceTest {
         instanceMetaData.setRackId("/upscaledRack");
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaData);
 
-        List<String> result = underTest.upscaleCluster(hostGroup, instanceMetaDataList);
+        List<String> result = underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList)));
 
         assertThat(result).isEqualTo(List.of("upscaled"));
 
@@ -492,7 +496,7 @@ class ClouderaManagerModificationServiceTest {
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaData);
 
         ClouderaManagerOperationFailedException exception = assertThrows(ClouderaManagerOperationFailedException.class,
-                () -> underTest.upscaleCluster(hostGroup, instanceMetaDataList));
+                () -> underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList))));
 
         assertThat(exception).hasMessageStartingWith("Setting rack ID for hosts batch operation failed. Response: ");
 
@@ -526,9 +530,9 @@ class ClouderaManagerModificationServiceTest {
         instanceMetaData.setRackId("");
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaData);
 
-        List<String> result = underTest.upscaleCluster(hostGroup, instanceMetaDataList);
+        List<String> result = underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList)));
 
-        assertThat(result).isEqualTo(List.of("upscaled"));
+        assertThat(result).containsOnly("upscaled");
 
         ArgumentCaptor<ApiHostRefList> bodyCatcher = ArgumentCaptor.forClass(ApiHostRefList.class);
         verify(clustersResourceApi, times(1)).addHosts(eq(STACK_NAME), bodyCatcher.capture());
@@ -571,9 +575,9 @@ class ClouderaManagerModificationServiceTest {
         instanceMetaDataUpscaled.setRackId("/upscaledRack");
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaDataOriginal, instanceMetaDataUpscaled);
 
-        List<String> result = underTest.upscaleCluster(hostGroup, instanceMetaDataList);
+        List<String> result = underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList)));
 
-        assertThat(result).isEqualTo(List.of("original", "upscaled"));
+        assertThat(result).containsOnly("original", "upscaled");
 
         ArgumentCaptor<ApiHostRefList> bodyCatcher = ArgumentCaptor.forClass(ApiHostRefList.class);
         verify(clustersResourceApi, times(1)).addHosts(eq(STACK_NAME), bodyCatcher.capture());
@@ -622,9 +626,9 @@ class ClouderaManagerModificationServiceTest {
         instanceMetaDataUpscaled.setRackId("/upscaledRack");
         List<InstanceMetaData> instanceMetaDataList = List.of(instanceMetaDataOriginal, instanceMetaDataUpscaled);
 
-        List<String> result = underTest.upscaleCluster(hostGroup, instanceMetaDataList);
+        List<String> result = underTest.upscaleCluster(Map.of(hostGroup, new LinkedHashSet<>(instanceMetaDataList)));
 
-        assertThat(result).isEqualTo(List.of("original", "upscaled"));
+        assertThat(result).containsOnly("upscaled", "original");
 
         ArgumentCaptor<ApiHostRefList> bodyCatcher = ArgumentCaptor.forClass(ApiHostRefList.class);
         verify(clustersResourceApi, times(1)).addHosts(eq(STACK_NAME), bodyCatcher.capture());

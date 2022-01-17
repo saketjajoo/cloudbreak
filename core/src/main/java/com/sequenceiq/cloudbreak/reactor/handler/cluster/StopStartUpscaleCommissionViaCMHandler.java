@@ -5,6 +5,7 @@ import static com.sequenceiq.cloudbreak.event.ResourceEvent.CLUSTER_SCALING_STOP
 import static com.sequenceiq.cloudbreak.event.ResourceEvent.CLUSTER_SCALING_STOPSTART_UPSCALE_WAITING_HOSTSTART;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -93,10 +94,13 @@ public class StopStartUpscaleCommissionViaCMHandler extends ExceptionCatcherEven
             Set<String> hostNames = allInstancesToCommission.stream().map(i -> i.getDiscoveryFQDN()).collect(Collectors.toSet());
             LOGGER.debug("HostNames to recommission: count={}, hostNames={}", hostNames.size(), hostNames);
 
-            HostGroup hostGroup = hostGroupService.getByClusterIdAndName(cluster.getId(), request.getHostGroupName())
-                    .orElseThrow(NotFoundException.notFound("hostgroup", request.getHostGroupName()));
+            Map<String, InstanceMetaData> hostsToRecommission = new HashMap<>();
+            for (String hostGroupName : request.getHostGroupNames()) {
+                HostGroup hostGroup = hostGroupService.getByClusterIdAndName(cluster.getId(), hostGroupName)
+                        .orElseThrow(NotFoundException.notFound("hostgroup", hostGroupName));
+                hostsToRecommission.putAll(clusterCommissionService.collectHostsToCommission(hostGroup, hostNames));
+            }
 
-            Map<String, InstanceMetaData> hostsToRecommission = clusterCommissionService.collectHostsToCommission(hostGroup, hostNames);
             List<String> missingHostsInCm = Collections.emptyList();
             if (hostNames.size() != hostsToRecommission.size()) {
                 missingHostsInCm = hostNames.stream()

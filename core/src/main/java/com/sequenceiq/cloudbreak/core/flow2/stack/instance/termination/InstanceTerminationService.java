@@ -22,7 +22,6 @@ import com.sequenceiq.cloudbreak.cloud.event.resource.RemoveInstanceResult;
 import com.sequenceiq.cloudbreak.common.service.TransactionService;
 import com.sequenceiq.cloudbreak.core.flow2.stack.CloudbreakFlowMessageService;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
-import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceMetaData;
 import com.sequenceiq.cloudbreak.reactor.api.event.StackFailureEvent;
 import com.sequenceiq.cloudbreak.service.StackUpdater;
@@ -61,9 +60,7 @@ public class InstanceTerminationService {
         Stack stack = context.getStack();
         List<InstanceMetaData> instanceMetaDataList = context.getInstanceMetaDataList();
         for (InstanceMetaData instanceMetaData : instanceMetaDataList) {
-            String instanceId = instanceMetaData.getInstanceId();
-            InstanceGroup instanceGroup = stack.getInstanceGroupByInstanceGroupId(instanceMetaData.getInstanceGroup().getId());
-            stackScalingService.updateRemovedResourcesState(Collections.singleton(instanceId), instanceGroup);
+            stackScalingService.updateRemovedResourcesState(Collections.singleton(instanceMetaData.getPrivateId()), stack.getId());
         }
         LOGGER.debug("Terminate instance result: {}", payload);
         stackUpdater.updateStackStatus(stack.getId(), DetailedStackStatus.AVAILABLE, "Instance removed");

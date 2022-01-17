@@ -2,6 +2,7 @@ package com.sequenceiq.cloudbreak.core.flow2.chain;
 
 import static com.sequenceiq.cloudbreak.core.flow2.stack.sync.StackSyncEvent.STACK_SYNC_EVENT;
 
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -10,15 +11,12 @@ import javax.inject.Inject;
 import org.springframework.stereotype.Component;
 
 import com.sequenceiq.cloudbreak.common.event.Selectable;
-import com.sequenceiq.cloudbreak.common.exception.NotFoundException;
 import com.sequenceiq.cloudbreak.core.flow2.cluster.stopstartus.StopStartUpscaleEvent;
 import com.sequenceiq.cloudbreak.core.flow2.event.StackAndClusterUpscaleTriggerEvent;
 import com.sequenceiq.cloudbreak.core.flow2.event.StackSyncTriggerEvent;
 import com.sequenceiq.cloudbreak.core.flow2.event.StopStartUpscaleTriggerEvent;
-import com.sequenceiq.cloudbreak.domain.stack.cluster.host.HostGroup;
 import com.sequenceiq.cloudbreak.domain.view.ClusterView;
 import com.sequenceiq.cloudbreak.domain.view.StackView;
-import com.sequenceiq.cloudbreak.service.hostgroup.HostGroupService;
 import com.sequenceiq.cloudbreak.service.stack.StackService;
 import com.sequenceiq.flow.core.chain.FlowEventChainFactory;
 import com.sequenceiq.flow.core.chain.config.FlowTriggerEventQueue;
@@ -28,9 +26,6 @@ public class StopStartUpscaleFlowEventChainFactory implements FlowEventChainFact
 
     @Inject
     private StackService stackService;
-
-    @Inject
-    private HostGroupService hostGroupService;
 
     @Override
     public String initEvent() {
@@ -59,15 +54,15 @@ public class StopStartUpscaleFlowEventChainFactory implements FlowEventChainFact
 
     private void addClusterScaleTriggerEventIfNeeded(StackAndClusterUpscaleTriggerEvent event, StackView stackView, ClusterView clusterView,
             Queue<Selectable> flowEventChain) {
-        HostGroup hostGroup = hostGroupService.getByClusterIdAndName(clusterView.getId(), event.getInstanceGroup())
-                .orElseThrow(NotFoundException.notFound("hostgroup", event.getInstanceGroup()));
-        flowEventChain.add(
-                new StopStartUpscaleTriggerEvent(
-                        StopStartUpscaleEvent.STOPSTART_UPSCALE_TRIGGER_EVENT.event(),
-                        stackView.getId(),
-                        hostGroup.getName(),
-                        event.getAdjustment(),
-                        event.getClusterManagerType())
-        );
+        for (Map.Entry<String, Integer> hostGroupWithAdjustment : event.getHostGroupsWithAdjustment().entrySet()) {
+            flowEventChain.add(
+                    new StopStartUpscaleTriggerEvent(
+                            StopStartUpscaleEvent.STOPSTART_UPSCALE_TRIGGER_EVENT.event(),
+                            stackView.getId(),
+                            hostGroupWithAdjustment.getKey(),
+                            hostGroupWithAdjustment.getValue(),
+                            event.getClusterManagerType())
+            );
+        }
     }
 }

@@ -134,7 +134,7 @@ public class StopStartDownscaleDecommissionViaCMHandlerTest {
         Set<String> hostnamesToDecommission = instancesToDecommission.stream().map(InstanceMetaData::getDiscoveryFQDN).collect(Collectors.toUnmodifiableSet());
 
         StopStartDownscaleDecommissionViaCMRequest request =
-                new StopStartDownscaleDecommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instanceIdsToDecommission);
+                new StopStartDownscaleDecommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instanceIdsToDecommission);
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
 
@@ -170,7 +170,7 @@ public class StopStartDownscaleDecommissionViaCMHandlerTest {
         Set<String> hostnamesToDecommission = instancesToDecommission.stream().map(InstanceMetaData::getDiscoveryFQDN).collect(Collectors.toUnmodifiableSet());
 
         StopStartDownscaleDecommissionViaCMRequest request =
-                new StopStartDownscaleDecommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instanceIdsToDecommission);
+                new StopStartDownscaleDecommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instanceIdsToDecommission);
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
 
@@ -207,7 +207,7 @@ public class StopStartDownscaleDecommissionViaCMHandlerTest {
         Set<String> hostnamesToDecommission = instancesToDecommission.stream().map(InstanceMetaData::getDiscoveryFQDN).collect(Collectors.toUnmodifiableSet());
 
         StopStartDownscaleDecommissionViaCMRequest request =
-                new StopStartDownscaleDecommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instanceIdsToDecommission);
+                new StopStartDownscaleDecommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instanceIdsToDecommission);
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
 
@@ -244,7 +244,7 @@ public class StopStartDownscaleDecommissionViaCMHandlerTest {
                 .thenThrow(new RuntimeException("collectHostsToDecommissionError"));
 
         StopStartDownscaleDecommissionViaCMRequest request =
-                new StopStartDownscaleDecommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instanceIdsToDecommission);
+                new StopStartDownscaleDecommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instanceIdsToDecommission);
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
         verify(clusterDecomissionService).collectHostsToRemove(eq(hostGroup), eq(hostnamesToDecommission));
@@ -284,7 +284,7 @@ public class StopStartDownscaleDecommissionViaCMHandlerTest {
                 .thenThrow(new RuntimeException("decommissionHostsError"));
 
         StopStartDownscaleDecommissionViaCMRequest request =
-                new StopStartDownscaleDecommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instanceIdsToDecommission);
+                new StopStartDownscaleDecommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instanceIdsToDecommission);
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
         verify(clusterDecomissionService).collectHostsToRemove(eq(hostGroup), eq(hostnamesToDecommission));
@@ -320,7 +320,7 @@ public class StopStartDownscaleDecommissionViaCMHandlerTest {
         Set<String> hostnamesToDecommission = instancesToDecommission.stream().map(InstanceMetaData::getDiscoveryFQDN).collect(Collectors.toUnmodifiableSet());
 
         StopStartDownscaleDecommissionViaCMRequest request =
-                new StopStartDownscaleDecommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instanceIdsToDecommission);
+                new StopStartDownscaleDecommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instanceIdsToDecommission);
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
 

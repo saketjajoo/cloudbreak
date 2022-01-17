@@ -6,6 +6,7 @@ import static com.sequenceiq.cloudbreak.cloud.aws.scheduler.WaiterRunner.run;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -80,27 +81,33 @@ public class AwsDownscaleService {
                     .collect(Collectors.toList());
             awsComputeResourceService.deleteComputeResources(auth, stack, resourcesToDownscale);
 
-            String asGroupName = cfStackUtil.getAutoscalingGroupName(auth, vmsToDownscale.get(0).getTemplate().getGroupName(),
-                    auth.getCloudContext().getLocation().getRegion().value());
             AmazonAutoScalingClient amazonASClient = awsClient.createAutoScalingClient(credentialView,
                     auth.getCloudContext().getLocation().getRegion().value());
-            List<String> instanceIdsInAutoScalingGroup = getInstanceIdsInAutoScalingGroup(asGroupName, amazonASClient);
-            detachInstances(asGroupName, instanceIdsInAutoScalingGroup, instanceIdsToDownscale, amazonASClient);
             AmazonEc2Client amazonEC2Client = awsClient.createEc2Client(credentialView,
                     auth.getCloudContext().getLocation().getRegion().value());
 
+            Map<String, List<CloudInstance>> downscaledGroupsWithCloudInstances =
+                    vmsToDownscale.stream().collect(Collectors.groupingBy(cloudInstance -> cloudInstance.getTemplate().getGroupName()));
             Long stackId = auth.getCloudContext().getId();
-            List<String> terminatedInstances = terminateInstances(stackId, instanceIdsToDownscale, amazonEC2Client);
-            if (!terminatedInstances.isEmpty()) {
-                waitForTerminateInstances(stackId, terminatedInstances, amazonEC2Client);
-            }
 
-            updateAutoScalingGroupSize(asGroupName, amazonASClient, instanceIdsInAutoScalingGroup, instanceIdsToDownscale);
+            for (Map.Entry<String, List<CloudInstance>> downscaledGroupWithInstanceIds : downscaledGroupsWithCloudInstances.entrySet()) {
+                String groupName = downscaledGroupWithInstanceIds.getKey();
+                String asGroupName = cfStackUtil.getAutoscalingGroupName(auth, groupName, auth.getCloudContext().getLocation().getRegion().value());
+                LOGGER.info("Downscale autoscaling group: {}", asGroupName);
+                List<String> instanceIdsInAutoScalingGroup = getInstanceIdsInAutoScalingGroup(asGroupName, amazonASClient);
+                List<String> instanceIdsForGroupToDownscale = downscaledGroupWithInstanceIds.getValue().stream()
+                        .map(CloudInstance::getInstanceId).collect(Collectors.toList());
+                detachInstances(asGroupName, instanceIdsInAutoScalingGroup, instanceIdsForGroupToDownscale, amazonASClient);
+                List<String> terminatedInstances = terminateInstances(stackId, instanceIdsForGroupToDownscale, amazonEC2Client);
+                if (!terminatedInstances.isEmpty()) {
+                    waitForTerminateInstances(stackId, terminatedInstances, amazonEC2Client);
+                }
+                updateAutoScalingGroupSize(asGroupName, amazonASClient, instanceIdsInAutoScalingGroup, instanceIdsForGroupToDownscale);
+            }
 
             for (CloudLoadBalancer loadBalancer : stack.getLoadBalancers()) {
                 cfStackUtil.removeLoadBalancerTargets(auth, loadBalancer, resourcesToDownscale);
             }
-
         }
         return awsResourceConnector.check(auth, resources);
     }
@@ -114,6 +121,7 @@ public class AwsDownscaleService {
                     .withDesiredCapacity(maxSize)
                     .withMaxSize(maxSize);
             amazonASClient.updateAutoScalingGroup(updateDesiredAndMax);
+            LOGGER.info("Update autoscaling group: {}", updateDesiredAndMax);
         } catch (AmazonServiceException e) {
             LOGGER.warn("Failed to update asGroupName: {}, error: {}", asGroupName, e.getErrorMessage(), e);
         }

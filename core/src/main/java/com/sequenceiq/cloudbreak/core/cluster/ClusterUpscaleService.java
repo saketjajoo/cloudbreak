@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -55,23 +56,30 @@ public class ClusterUpscaleService {
     @Inject
     private ParcelService parcelService;
 
-    public void uploadRecipesOnNewHosts(Long stackId, String hostGroupName) throws CloudbreakException {
+    public void uploadRecipesOnNewHosts(Long stackId, Set<String> hostGroupNames) throws CloudbreakException {
         Stack stack = stackService.getByIdWithListsInTransaction(stackId);
         LOGGER.debug("Start executing pre recipes");
-        HostGroup hostGroup = getHostGroup(hostGroupName, stack);
         Set<HostGroup> hostGroups = hostGroupService.getByClusterWithRecipes(stack.getCluster().getId());
-        recipeEngine.uploadUpscaleRecipes(stack, hostGroup, hostGroups);
+        Set<HostGroup> targetHostGroups = hostGroups.stream().filter(hostGroup -> hostGroupNames.contains(hostGroup.getName())).collect(Collectors.toSet());
+        recipeEngine.uploadUpscaleRecipes(stack, targetHostGroups, hostGroups);
     }
 
-    public void installServicesOnNewHosts(Long stackId, String hostGroupName, Boolean repair, Boolean restartServices) throws CloudbreakException {
+    public void installServicesOnNewHosts(Long stackId, Set<String> hostGroupNames, Boolean repair, Boolean restartServices) throws CloudbreakException {
         Stack stack = stackService.getByIdWithClusterInTransaction(stackId);
         LOGGER.debug("Start installing CM services");
         removeUnusedParcelComponents(stack);
-        HostGroup hostGroup = getHostGroup(hostGroupName, stack);
-        recipeEngine.executePostAmbariStartRecipes(stack, Set.of(hostGroup));
-        Set<InstanceMetaData> runningInstanceMetaDataSet = hostGroup.getInstanceGroup().getRunningInstanceMetaDataSet();
+        Set<HostGroup> hostGroupSetWithRecipes = hostGroupService.getByClusterWithRecipes(stack.getCluster().getId());
+        Set<HostGroup> hostGroupSetWithInstanceMetadas = hostGroupService.getByCluster(stack.getCluster().getId());
+        Map<HostGroup, Set<InstanceMetaData>> instanceMetaDatasByHostGroup = hostGroupSetWithInstanceMetadas.stream()
+                .filter(hostGroup -> hostGroupNames.contains(hostGroup.getName()))
+                .collect(Collectors.toMap(hostGroup -> hostGroup, hostGroup -> hostGroup.getInstanceGroup().getRunningInstanceMetaDataSet()));
+        recipeEngine.executePostAmbariStartRecipes(stack, hostGroupSetWithRecipes);
+        Set<InstanceMetaData> runningInstanceMetaDataSet =
+                hostGroupSetWithInstanceMetadas.stream()
+                        .flatMap(hostGroup -> hostGroup.getInstanceGroup().getRunningInstanceMetaDataSet().stream())
+                        .collect(Collectors.toSet());
         ClusterApi connector = getClusterConnector(stack);
-        List<String> upscaledHosts = connector.upscaleCluster(hostGroup, runningInstanceMetaDataSet);
+        List<String> upscaledHosts = connector.upscaleCluster(instanceMetaDatasByHostGroup);
         restartServicesIfNecessary(repair, restartServices, stack, connector);
         setInstanceStatus(runningInstanceMetaDataSet, upscaledHosts);
     }

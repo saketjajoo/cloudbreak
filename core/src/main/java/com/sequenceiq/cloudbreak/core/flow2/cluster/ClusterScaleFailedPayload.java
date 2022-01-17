@@ -1,8 +1,6 @@
 package com.sequenceiq.cloudbreak.core.flow2.cluster;
 
-import com.sequenceiq.cloudbreak.reactor.api.event.HostGroupPayload;
-
-public class ClusterScaleFailedPayload implements HostGroupPayload {
+public class ClusterScaleFailedPayload {
 
     private final Long stackId;
 
@@ -16,14 +14,8 @@ public class ClusterScaleFailedPayload implements HostGroupPayload {
         this.errorDetails = errorDetails;
     }
 
-    @Override
     public Long getResourceId() {
         return stackId;
-    }
-
-    @Override
-    public String getHostGroupName() {
-        return hostGroupName;
     }
 
     public Exception getErrorDetails() {

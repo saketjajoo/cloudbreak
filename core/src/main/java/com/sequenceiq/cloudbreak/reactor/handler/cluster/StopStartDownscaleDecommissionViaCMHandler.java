@@ -5,6 +5,7 @@ import static com.sequenceiq.cloudbreak.event.ResourceEvent.CLUSTER_SCALING_STOP
 import static com.sequenceiq.cloudbreak.event.ResourceEvent.CLUSTER_SCALING_STOPSTART_DOWNSCALE_ENTERINGCMMAINTMODE;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -88,10 +89,13 @@ public class StopStartDownscaleDecommissionViaCMHandler extends ExceptionCatcher
             Set<String> hostNames = getHostNamesForPrivateIds(request.getInstanceIdsToDecommission(), stack);
             LOGGER.debug("Attempting to decommission hosts. count={}, hostnames={}", hostNames.size(), hostNames);
 
-            HostGroup hostGroup = hostGroupService.getByClusterIdAndName(cluster.getId(), request.getHostGroupName())
-                    .orElseThrow(NotFoundException.notFound("hostgroup", request.getHostGroupName()));
+            Map<String, InstanceMetaData> hostsToRemove = new HashMap<>();
+            for (String hostGroupName : request.getHostGroupNames()) {
+                HostGroup hostGroup = hostGroupService.getByClusterIdAndName(cluster.getId(), hostGroupName)
+                        .orElseThrow(NotFoundException.notFound("hostgroup", hostGroupName));
+                hostsToRemove.putAll(clusterDecomissionService.collectHostsToRemove(hostGroup, hostNames));
+            }
 
-            Map<String, InstanceMetaData> hostsToRemove = clusterDecomissionService.collectHostsToRemove(hostGroup, hostNames);
             List<String> missingHostsInCm = Collections.emptyList();
             if (hostNames.size() != hostsToRemove.size()) {
                 missingHostsInCm = hostNames.stream()

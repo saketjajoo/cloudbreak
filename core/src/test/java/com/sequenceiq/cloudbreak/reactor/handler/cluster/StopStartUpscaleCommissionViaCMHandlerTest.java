@@ -101,7 +101,7 @@ public class StopStartUpscaleCommissionViaCMHandlerTest {
         setupPerTestMocks(hostGroup, hostNames, cmAvailableHosts,  recommissionedFqdns);
 
         StopStartUpscaleCommissionViaCMRequest request =
-                new StopStartUpscaleCommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instancesToCommission, Collections.emptyList());
+                new StopStartUpscaleCommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instancesToCommission, Collections.emptyList());
 
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
@@ -126,7 +126,7 @@ public class StopStartUpscaleCommissionViaCMHandlerTest {
         setupPerTestMocks(hostGroup, hostNames, cmAvailableHosts,  recommissionedFqdns);
 
         StopStartUpscaleCommissionViaCMRequest request =
-                new StopStartUpscaleCommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instancesToCommission, Collections.emptyList());
+                new StopStartUpscaleCommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instancesToCommission, Collections.emptyList());
 
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
@@ -150,7 +150,7 @@ public class StopStartUpscaleCommissionViaCMHandlerTest {
         setupPerTestMocks(hostGroup, hostNames, cmAvailableHosts,  recommissionedFqdns);
 
         StopStartUpscaleCommissionViaCMRequest request =
-                new StopStartUpscaleCommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instancesToCommission, Collections.emptyList());
+                new StopStartUpscaleCommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instancesToCommission, Collections.emptyList());
 
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
@@ -175,7 +175,7 @@ public class StopStartUpscaleCommissionViaCMHandlerTest {
         setupPerTestMocks(hostGroup, hostNames, cmAvailableHosts,  recommissionedFqdns);
 
         StopStartUpscaleCommissionViaCMRequest request =
-                new StopStartUpscaleCommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instancesToCommission, Collections.emptyList());
+                new StopStartUpscaleCommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instancesToCommission, Collections.emptyList());
 
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
@@ -200,7 +200,7 @@ public class StopStartUpscaleCommissionViaCMHandlerTest {
         doThrow(new RuntimeException("waitForHostsHealthyException")).when(clusterSetupService).waitForHostsHealthy(anySet());
 
         StopStartUpscaleCommissionViaCMRequest request =
-                new StopStartUpscaleCommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instancesToCommission, Collections.emptyList());
+                new StopStartUpscaleCommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instancesToCommission, Collections.emptyList());
 
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
@@ -229,7 +229,7 @@ public class StopStartUpscaleCommissionViaCMHandlerTest {
                 .thenThrow(new RuntimeException("collectHostsToCommissionError"));
 
         StopStartUpscaleCommissionViaCMRequest request =
-                new StopStartUpscaleCommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instancesToCommission, Collections.emptyList());
+                new StopStartUpscaleCommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instancesToCommission, Collections.emptyList());
 
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);
@@ -257,7 +257,7 @@ public class StopStartUpscaleCommissionViaCMHandlerTest {
         when(clusterCommissionService.recommissionClusterNodes(cmAvailableHosts)).thenThrow(new RuntimeException("commissionHostsError"));
 
         StopStartUpscaleCommissionViaCMRequest request =
-                new StopStartUpscaleCommissionViaCMRequest(stack, INSTANCE_GROUP_NAME, instancesToCommission, Collections.emptyList());
+                new StopStartUpscaleCommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME), instancesToCommission, Collections.emptyList());
 
         HandlerEvent handlerEvent = new HandlerEvent(Event.wrap(request));
         Selectable selectable = underTest.doAccept(handlerEvent);

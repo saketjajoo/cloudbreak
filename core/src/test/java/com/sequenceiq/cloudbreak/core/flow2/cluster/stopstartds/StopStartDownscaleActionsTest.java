@@ -145,7 +145,7 @@ public class StopStartDownscaleActionsTest {
 
         StopStartDownscaleContext stopStartDownscaleContext = createContext(instanceIdsToRemove);
         StopStartDownscaleTriggerEvent payload = new StopStartDownscaleTriggerEvent(SELECTOR, STACK_ID, INSTANCE_GROUP_NAME_ACTIONABLE,
-                instanceIdsToRemove, ClusterManagerType.CLOUDERA_MANAGER);
+                instanceIdsToRemove);
 
         mockStackEtc();
         when(reactorEventFactory.createEvent(anyMap(), isNotNull())).thenReturn(event);
@@ -161,7 +161,8 @@ public class StopStartDownscaleActionsTest {
 
         StopStartDownscaleDecommissionViaCMRequest req = (StopStartDownscaleDecommissionViaCMRequest) argumentCaptor.getValue();
         Assert.assertEquals(instanceIdsToRemove, req.getInstanceIdsToDecommission());
-        Assert.assertEquals(INSTANCE_GROUP_NAME_ACTIONABLE, req.getHostGroupName());
+        Assert.assertEquals(1, req.getHostGroupNames().size());
+        Assert.assertEquals(INSTANCE_GROUP_NAME_ACTIONABLE, req.getHostGroupNames().iterator().next());
     }
 
     @Test
@@ -183,7 +184,7 @@ public class StopStartDownscaleActionsTest {
 
         StopStartDownscaleContext stopStartDownscaleContext = createContext(instanceIdsToRemove);
         StopStartDownscaleDecommissionViaCMRequest r =
-                new StopStartDownscaleDecommissionViaCMRequest(stack, INSTANCE_GROUP_NAME_ACTIONABLE, instanceIdsToRemove);
+                new StopStartDownscaleDecommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME_ACTIONABLE), instanceIdsToRemove);
         StopStartDownscaleDecommissionViaCMResult payload = new StopStartDownscaleDecommissionViaCMResult(r, decommissionedHostsFqdns, Collections.emptyList());
 
         mockStackEtc(instancesActionableStarted, instancesActionableNotStarted, instancesRandomStarted, instancesRandomNotStarted);
@@ -226,7 +227,7 @@ public class StopStartDownscaleActionsTest {
 
         StopStartDownscaleContext stopStartDownscaleContext = createContext(instanceIdsToRemove);
         StopStartDownscaleDecommissionViaCMRequest r =
-                new StopStartDownscaleDecommissionViaCMRequest(stack, INSTANCE_GROUP_NAME_ACTIONABLE, instanceIdsToRemove);
+                new StopStartDownscaleDecommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME_ACTIONABLE), instanceIdsToRemove);
         StopStartDownscaleDecommissionViaCMResult payload = new StopStartDownscaleDecommissionViaCMResult(r, decommissionedHostsFqdns, notDecommissionedFqdns);
 
         mockStackEtc(instancesActionableStarted, instancesActionableNotStarted, instancesRandomStarted, instancesRandomNotStarted);
@@ -270,7 +271,7 @@ public class StopStartDownscaleActionsTest {
 
         StopStartDownscaleContext stopStartDownscaleContext = createContext(instanceIdsToRemove);
         StopStartDownscaleDecommissionViaCMRequest r =
-                new StopStartDownscaleDecommissionViaCMRequest(stack, INSTANCE_GROUP_NAME_ACTIONABLE, instanceIdsToRemove);
+                new StopStartDownscaleDecommissionViaCMRequest(stack, Set.of(INSTANCE_GROUP_NAME_ACTIONABLE), instanceIdsToRemove);
         StopStartDownscaleDecommissionViaCMResult payload = new StopStartDownscaleDecommissionViaCMResult(r, decommissionedHostsFqdns, notDecommissionedFqdns);
 
         mockStackEtc(instancesActionableStarted, instancesActionableNotStarted, instancesRandomStarted, instancesRandomNotStarted);

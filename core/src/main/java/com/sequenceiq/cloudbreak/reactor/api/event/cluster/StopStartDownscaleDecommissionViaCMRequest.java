@@ -11,7 +11,7 @@ public class StopStartDownscaleDecommissionViaCMRequest extends AbstractClusterS
 
     private final Set<Long> instanceIdsToDecommission;
 
-    public StopStartDownscaleDecommissionViaCMRequest(Stack stack, String hostGroupName, Set<Long> instanceIdsToDecommission) {
+    public StopStartDownscaleDecommissionViaCMRequest(Stack stack, Set<String> hostGroupName, Set<Long> instanceIdsToDecommission) {
         super(stack.getId(), hostGroupName);
         this.stack = stack;
         this.instanceIdsToDecommission = instanceIdsToDecommission;
