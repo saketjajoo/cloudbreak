@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.google.common.base.Strings;
 import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.image.Image;
 import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.image.ImageCatalog;
 import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.image.Images;
@@ -77,7 +78,7 @@ public class ImageService {
 
     public Pair<ImageWrapper, String> fetchImageWrapperAndName(Stack stack, ImageSettingsRequest imageRequest) {
         String region = stack.getRegion();
-        String platformString = stack.getCloudPlatform().toLowerCase();
+        String platformString = getPlatformString(stack);
         ImageWrapper imageWrapper = getImage(imageRequest, region, platformString);
         String imageName = determineImageName(platformString, region, imageWrapper.getImage());
         LOGGER.info("Selected VM image for CloudPlatform '{}' and region '{}' is: {} from: {} image catalog with '{}' catalog name",
@@ -85,9 +86,21 @@ public class ImageService {
         return Pair.of(imageWrapper, imageName);
     }
 
+    private String getPlatformString(Stack stack) {
+        String platformVariant = stack.getPlatformvariant();
+        String platform = stack.getCloudPlatform().toLowerCase();
+        if (Strings.isNullOrEmpty(platformVariant)) {
+            return platform;
+        } else if (platformVariant.toLowerCase().endsWith("_gov")) {
+            return platformVariant.toLowerCase();
+        } else {
+            return platform;
+        }
+    }
+
     public List<Pair<ImageWrapper, String>> fetchImagesWrapperAndName(Stack stack, ImageSettingsRequest imageRequest) {
         String region = stack.getRegion();
-        String platformString = stack.getCloudPlatform().toLowerCase();
+        String platformString = getPlatformString(stack);
         List<ImageWrapper> imageWrappers = getImages(imageRequest, region, platformString);
         LOGGER.debug("Images found: {}", imageWrappers);
         return imageWrappers.stream().map(imgw -> Pair.of(imgw, determineImageName(platformString, region, imgw.getImage()))).collect(Collectors.toList());
@@ -185,7 +198,7 @@ public class ImageService {
     private Image getImageForStack(Stack stack) {
         final ImageEntity imageEntity = getByStack(stack);
         final ImageSettingsRequest imageSettings = imageEntityToImageSettingsRequest(imageEntity);
-        final ImageWrapper imageWrapper = getImage(imageSettings, stack.getRegion(), stack.getCloudPlatform().toLowerCase());
+        final ImageWrapper imageWrapper = getImage(imageSettings, stack.getRegion(), getPlatformString(stack));
 
         return imageWrapper.getImage();
     }

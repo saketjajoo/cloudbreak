@@ -109,6 +109,7 @@ altus:
 
 cb:
   enabledplatforms: AZURE,AWS,GCP
+  enabledgovplatforms: AWS
   platform.default.rootVolumeSize:
     AWS: 100
     AZURE: 100

@@ -38,6 +38,8 @@ import com.sequenceiq.cloudbreak.polling.ExtendedPollingResult;
 import com.sequenceiq.cloudbreak.polling.PollingResult;
 import com.sequenceiq.cloudbreak.polling.PollingService;
 import com.sequenceiq.environment.configuration.SupportedPlatforms;
+import com.sequenceiq.environment.credential.domain.Credential;
+import com.sequenceiq.environment.credential.domain.CredentialView;
 import com.sequenceiq.environment.environment.domain.Environment;
 import com.sequenceiq.environment.environment.domain.EnvironmentTags;
 import com.sequenceiq.environment.environment.domain.Region;
@@ -206,6 +208,8 @@ public class FreeIpaCreationHandlerTest {
     @EnumSource(value = PollingResult.class, names = "SUCCESS", mode = Mode.EXCLUDE)
     public void testIfFreeIpaPollingServiceReturnsWithUnsuccessfulResultThenCreationFailedEventShouldBeSent(PollingResult pollingResult) {
         EnvironmentDto environmentDto = someEnvironmentWithFreeIpaCreation();
+        environmentDto.setCredential(new Credential());
+        environmentDto.setCredentialView(new CredentialView());
         Environment environment = mock(Environment.class);
 
         when(environment.getCloudPlatform()).thenReturn(environmentDto.getCloudPlatform());
@@ -247,15 +251,20 @@ public class FreeIpaCreationHandlerTest {
         EnvironmentDto environmentDto = someEnvironmentWithFreeIpaCreation();
         Environment environment = new Environment();
         environment.setCreateFreeIpa(true);
+        Credential credential = new Credential();
+        environment.setCredential(credential);
 
         int spotPercentage = 100;
         Double spotMaxPrice = 0.9;
-        environmentDto.getFreeIpaCreation().setAws(FreeIpaCreationAwsParametersDto.builder()
+        environmentDto.getFreeIpaCreation()
+                .setAws(FreeIpaCreationAwsParametersDto.builder()
                 .withSpot(FreeIpaCreationAwsSpotParametersDto.builder()
                         .withMaxPrice(spotMaxPrice)
                         .withPercentage(spotPercentage)
                         .build())
                 .build());
+        environmentDto.setCredential(new Credential());
+        environmentDto.setCredentialView(new CredentialView());
 
         ExtendedPollingResult extendedPollingResult = new ExtendedPollingResult.ExtendedPollingResultBuilder()
                 .success()
@@ -292,7 +301,8 @@ public class FreeIpaCreationHandlerTest {
         EnvironmentDto environmentDto = someEnvironmentWithFreeIpaCreation();
         environmentDto.getFreeIpaCreation().setImageId(IMAGE_ID);
         environmentDto.getFreeIpaCreation().setImageCatalog(IMAGE_CATALOG);
-
+        environmentDto.setCredential(new Credential());
+        environmentDto.setCredentialView(new CredentialView());
         Environment environment = new Environment();
         environment.setCreateFreeIpa(true);
 
@@ -325,7 +335,8 @@ public class FreeIpaCreationHandlerTest {
         EnvironmentDto environmentDto = someEnvironmentWithFreeIpaCreation();
         environmentDto.getFreeIpaCreation().setImageId(IMAGE_ID);
         environmentDto.getFreeIpaCreation().setImageCatalog(null);
-
+        environmentDto.setCredential(new Credential());
+        environmentDto.setCredentialView(new CredentialView());
         Environment environment = new Environment();
         environment.setCreateFreeIpa(true);
         ExtendedPollingResult extendedPollingResult = new ExtendedPollingResult.ExtendedPollingResultBuilder()
@@ -358,7 +369,8 @@ public class FreeIpaCreationHandlerTest {
         EnvironmentDto environmentDto = someEnvironmentWithFreeIpaCreation();
         environmentDto.getFreeIpaCreation().setImageId(null);
         environmentDto.getFreeIpaCreation().setImageCatalog(IMAGE_CATALOG);
-
+        environmentDto.setCredential(new Credential());
+        environmentDto.setCredentialView(new CredentialView());
         Environment environment = new Environment();
         environment.setCreateFreeIpa(true);
         ExtendedPollingResult extendedPollingResult = new ExtendedPollingResult.ExtendedPollingResultBuilder()
