@@ -7,11 +7,21 @@ public abstract class DistroXDatabaseBase {
     @NotNull
     private DistroXDatabaseAvailabilityType availabilityType;
 
+    private String databaseEngineVersion;
+
     public DistroXDatabaseAvailabilityType getAvailabilityType() {
         return availabilityType;
     }
 
     public void setAvailabilityType(DistroXDatabaseAvailabilityType availabilityType) {
         this.availabilityType = availabilityType;
+    }
+
+    public String getDatabaseEngineVersion() {
+        return databaseEngineVersion;
+    }
+
+    public void setDatabaseEngineVersion(String databaseEngineVersion) {
+        this.databaseEngineVersion = databaseEngineVersion;
     }
 }
