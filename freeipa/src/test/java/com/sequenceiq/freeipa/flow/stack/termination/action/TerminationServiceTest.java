@@ -108,7 +108,7 @@ class TerminationServiceTest {
     }
 
     @Test
-    void testfinalizeTerminationTransaction() throws Exception {
+    void testFinalizeTerminationTransaction() throws Exception {
         Stack stack = mock(Stack.class);
 
         when(stackService.getByIdWithListsInTransaction(1L)).thenReturn(stack);

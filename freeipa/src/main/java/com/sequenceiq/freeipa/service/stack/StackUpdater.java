@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.sequenceiq.cloudbreak.cloud.scheduler.PollGroup;
 import com.sequenceiq.cloudbreak.cloud.store.InMemoryStateStore;
 import com.sequenceiq.cloudbreak.message.StackStatusMessageTransformator;
@@ -35,8 +36,12 @@ public class StackUpdater {
     @Inject
     private ServiceStatusRawMessageTransformer serviceStatusRawMessageTransformer;
 
+    @Inject
+    private StackStatusUpdater stackStatusUpdater;
+
     public Stack updateStackStatus(Long stackId, DetailedStackStatus detailedStatus, String statusReason) {
-        return doUpdateStackStatus(stackId, detailedStatus, statusReason);
+        Stack stack = stackService.getStackById(stackId);
+        return updateStackStatus(stack, detailedStatus, statusReason);
     }
 
     public Stack updateStackStatus(Stack stack, DetailedStackStatus detailedStatus, String statusReason) {
@@ -54,12 +59,8 @@ public class StackUpdater {
         return stackService.save(stack);
     }
 
-    private Stack doUpdateStackStatus(Long stackId, DetailedStackStatus detailedStatus, String statusReason) {
-        Stack stack = stackService.getStackById(stackId);
-        return doUpdateStackStatus(stack, detailedStatus, statusReason);
-    }
-
-    private Stack doUpdateStackStatus(Stack stack, DetailedStackStatus newDetailedStatus, String rawNewStatusReason) {
+    @VisibleForTesting
+    Stack doUpdateStackStatus(Stack stack, DetailedStackStatus newDetailedStatus, String rawNewStatusReason) {
         Status newStatus = newDetailedStatus.getStatus();
         StackStatus stackStatus = stack.getStackStatus();
         if (!Status.DELETE_COMPLETED.equals(stackStatus.getStatus())) {
@@ -83,7 +84,7 @@ public class StackUpdater {
     }
 
     private Stack handleStatusChange(Stack stack, DetailedStackStatus newDetailedStatus, String newStatusReason, Status newStatus, StackStatus stackStatus) {
-        stack = saveStackNewStatus(stack, newDetailedStatus, newStatusReason, newStatus, stackStatus);
+        stack = stackStatusUpdater.updateStatus(stack, newDetailedStatus, newStatusReason, newStatus, stackStatus);
         updateInMemoryStore(stack, newStatus);
         return stack;
     }
@@ -95,15 +96,6 @@ public class StackUpdater {
             PollGroup pollGroup = Status.DELETE_COMPLETED.equals(newStatus) ? PollGroup.CANCELLED : PollGroup.POLLABLE;
             InMemoryStateStore.putStack(stack.getId(), pollGroup);
         }
-    }
-
-    private Stack saveStackNewStatus(Stack stack, DetailedStackStatus newDetailedStatus, String newStatusReason, Status newStatus, StackStatus stackStatus) {
-        LOGGER.debug("Updated: status from {} to {} - detailed status from {} to {} - reason from {} to {}",
-                stackStatus.getStatus(), newStatus, stackStatus.getDetailedStackStatus(), newDetailedStatus,
-                stackStatus.getStatusReason(), newStatusReason);
-        stack.setStackStatus(new StackStatus(stack, newStatus, newStatusReason, newDetailedStatus));
-        stack = stackService.save(stack);
-        return stack;
     }
 
     private boolean isStatusChanged(Stack stack, DetailedStackStatus detailedStatus, String statusReason, Status status) {
