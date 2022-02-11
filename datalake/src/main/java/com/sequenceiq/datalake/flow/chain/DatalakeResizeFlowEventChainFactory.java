@@ -12,6 +12,8 @@ import static com.sequenceiq.datalake.flow.stop.SdxStopEvent.SDX_STOP_EVENT;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import javax.inject.Inject;
+
 import org.springframework.stereotype.Component;
 
 import com.sequenceiq.cloudbreak.common.event.Selectable;
@@ -23,12 +25,18 @@ import com.sequenceiq.datalake.flow.dr.backup.DatalakeBackupFailureReason;
 import com.sequenceiq.datalake.flow.dr.backup.event.DatalakeTriggerBackupEvent;
 import com.sequenceiq.datalake.flow.dr.restore.DatalakeRestoreFailureReason;
 import com.sequenceiq.datalake.flow.dr.restore.event.DatalakeTriggerRestoreEvent;
+import com.sequenceiq.datalake.flow.freeipa.upscale.event.FreeIpaUpscaleStartEvent;
 import com.sequenceiq.datalake.flow.stop.event.SdxStartStopEvent;
+import com.sequenceiq.datalake.service.FreeipaService;
 import com.sequenceiq.flow.core.chain.FlowEventChainFactory;
 import com.sequenceiq.flow.core.chain.config.FlowTriggerEventQueue;
+import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.common.AvailabilityType;
 
 @Component
 public class DatalakeResizeFlowEventChainFactory implements FlowEventChainFactory<DatalakeResizeFlowChainStartEvent> {
+
+    @Inject
+    private FreeipaService freeipaService;
 
     @Override
     public String initEvent() {
@@ -39,18 +47,18 @@ public class DatalakeResizeFlowEventChainFactory implements FlowEventChainFactor
     public FlowTriggerEventQueue createFlowTriggerEventQueue(DatalakeResizeFlowChainStartEvent event) {
         Queue<Selectable> chain = new ConcurrentLinkedQueue<>();
 
-
+        boolean accept = true;
+        String envCrn = event.getSdxCluster().getEnvCrn();
+        if (AvailabilityType.HA.getInstanceCount() > freeipaService.getNodeCount(envCrn)) {
+            addFreeIpaUpscaleToChain(chain, event, envCrn, accept);
+            accept = false;
+        }
         if (event.shouldTakeBackup()) {
-            //take a backup
-            chain.add(new DatalakeTriggerBackupEvent(DATALAKE_TRIGGER_BACKUP_EVENT.event(),
-                    event.getResourceId(), event.getUserId(), event.getBackupLocation(), "resize" + System.currentTimeMillis(),
-                    DatalakeBackupFailureReason.BACKUP_ON_RESIZE, event.accepted()));
-            // Stop datalake
-            chain.add(new SdxStartStopEvent(SDX_STOP_EVENT.event(), event.getResourceId(), event.getUserId()));
-        } else {
-            chain.add(new SdxStartStopEvent(SDX_STOP_EVENT.event(), event.getResourceId(), event.getUserId(), event.accepted()));
+            addBackupToChain(chain, event, accept);
+            accept = false;
         }
 
+        addStopToChain(chain, event, accept);
 
         // De-attach sdx from environment
         chain.add(new SdxStartDetachEvent(SDX_DETACH_EVENT.event(), event.getResourceId(), event.getSdxCluster(), event.getUserId()));
@@ -70,5 +78,33 @@ public class DatalakeResizeFlowEventChainFactory implements FlowEventChainFactor
         chain.add(new SdxEvent(START_DATAHUB_EVENT.event(), event.getResourceId(), event.getUserId()));
 
         return new FlowTriggerEventQueue(getName(), event, chain);
+    }
+
+    private void addFreeIpaUpscaleToChain(Queue<Selectable> chain, DatalakeResizeFlowChainStartEvent event, String envCrn, boolean accept) {
+        if (accept) {
+            chain.add(new FreeIpaUpscaleStartEvent(null, event.getResourceId(), event.getUserId(), envCrn, event.accepted()));
+        } else {
+            chain.add(new FreeIpaUpscaleStartEvent(event.getResourceId(), event.getUserId(), envCrn));
+        }
+    }
+
+    private void addBackupToChain(Queue<Selectable> chain, DatalakeResizeFlowChainStartEvent event, boolean accept) {
+        if (accept) {
+            chain.add(new DatalakeTriggerBackupEvent(DATALAKE_TRIGGER_BACKUP_EVENT.event(),
+                    event.getResourceId(), event.getUserId(), event.getBackupLocation(), "resize" + System.currentTimeMillis(),
+                    DatalakeBackupFailureReason.BACKUP_ON_RESIZE, event.accepted()));
+        } else {
+            chain.add(new DatalakeTriggerBackupEvent(DATALAKE_TRIGGER_BACKUP_EVENT.event(),
+                    event.getResourceId(), event.getUserId(), event.getBackupLocation(), "resize" + System.currentTimeMillis(),
+                    DatalakeBackupFailureReason.BACKUP_ON_RESIZE));
+        }
+    }
+
+    private void addStopToChain(Queue<Selectable> chain, DatalakeResizeFlowChainStartEvent event, boolean accept) {
+        if (accept) {
+            chain.add(new SdxStartStopEvent(SDX_STOP_EVENT.event(), event.getResourceId(), event.getUserId(), event.accepted()));
+        } else {
+            chain.add(new SdxStartStopEvent(SDX_STOP_EVENT.event(), event.getResourceId(), event.getUserId()));
+        }
     }
 }

@@ -14,6 +14,8 @@ public enum MetricType implements Metric {
     SDX_REPAIR_FAILED("sdx.repair.failed"),
     SDX_DELETION_FINISHED("sdx.deletion.finished"),
     SDX_DELETION_FAILED("sdx.deletion.failed"),
+    UPSCALE_FREEIPA_FINISHED("freeipa.upscale.finished"),
+    UPSCALE_FREEIPA_FAILED("freeipa.upscale.failed"),
     SDX_BACKUP_REQUESTED("sdx.backup.requested"),
     SDX_BACKUP_FAILED("sdx.backup.failed"),
     SDX_BACKUP_FINISHED("sdx.backup.finished"),
