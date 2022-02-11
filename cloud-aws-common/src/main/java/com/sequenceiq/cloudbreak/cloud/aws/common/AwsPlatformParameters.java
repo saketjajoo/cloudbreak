@@ -23,7 +23,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.sequenceiq.cloudbreak.cloud.PlatformParameters;
+import com.sequenceiq.cloudbreak.cloud.PlatformParametersConsts;
 import com.sequenceiq.cloudbreak.cloud.TagValidator;
 import com.sequenceiq.cloudbreak.cloud.exception.CloudConnectorException;
 import com.sequenceiq.cloudbreak.cloud.model.AvailabilityZone;
@@ -33,6 +35,7 @@ import com.sequenceiq.cloudbreak.cloud.model.DisplayName;
 import com.sequenceiq.cloudbreak.cloud.model.PlatformOrchestrator;
 import com.sequenceiq.cloudbreak.cloud.model.Region;
 import com.sequenceiq.cloudbreak.cloud.model.ScriptParams;
+import com.sequenceiq.cloudbreak.cloud.model.SpecialParameters;
 import com.sequenceiq.cloudbreak.cloud.model.StackParamValidation;
 import com.sequenceiq.cloudbreak.cloud.model.TagSpecification;
 import com.sequenceiq.cloudbreak.cloud.model.VmRecommendations;
@@ -189,6 +192,20 @@ public class AwsPlatformParameters implements PlatformParameters {
     @Override
     public boolean isAutoTlsSupported() {
         return true;
+    }
+
+    @Override
+    public SpecialParameters specialParameters() {
+        Map<String, Boolean> specialParameters = Maps.newHashMap();
+        specialParameters.put(PlatformParametersConsts.CUSTOM_INSTANCETYPE, Boolean.FALSE);
+        specialParameters.put(PlatformParametersConsts.NETWORK_IS_MANDATORY, Boolean.TRUE);
+        specialParameters.put(PlatformParametersConsts.UPSCALING_SUPPORTED, Boolean.TRUE);
+        specialParameters.put(PlatformParametersConsts.DOWNSCALING_SUPPORTED, Boolean.TRUE);
+        specialParameters.put(PlatformParametersConsts.STARTSTOP_SUPPORTED, Boolean.TRUE);
+        specialParameters.put(PlatformParametersConsts.REGIONS_SUPPORTED, Boolean.TRUE);
+        specialParameters.put(PlatformParametersConsts.VOLUME_ATTACHMENT_SUPPORTED, Boolean.TRUE);
+        specialParameters.put(PlatformParametersConsts.VERTICAL_SCALING_SUPPORTED, Boolean.TRUE);
+        return new SpecialParameters(specialParameters);
     }
 
     public String getAuditPoliciesJson() {

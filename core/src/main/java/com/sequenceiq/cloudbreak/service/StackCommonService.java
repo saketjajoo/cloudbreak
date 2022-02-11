@@ -29,6 +29,7 @@ import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.StackImageChange
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.StackScaleV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.StackV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.UpdateClusterV4Request;
+import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.StackVerticalScaleV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.network.NetworkScaleV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.response.AutoscaleStackV4Response;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.response.GeneratedBlueprintV4Response;
@@ -289,6 +290,22 @@ public class StackCommonService {
         return flowIdentifier;
     }
 
+    public FlowIdentifier putVerticalScalingInWorkspace(NameOrCrn nameOrCrn, Long workspaceId, StackVerticalScaleV4Request stackVerticalScaleV4Request) {
+        Stack stack;
+        try {
+            stack = transactionService.required(() -> {
+                return stackService.getByNameOrCrnInWorkspace(nameOrCrn, workspaceId);
+            });
+        } catch (TransactionService.TransactionExecutionException e) {
+            LOGGER.error("Cannot validate vertical scaling: {}", e.getMessage(), e);
+            throw new TransactionService.TransactionRuntimeExecutionException(e);
+        }
+        MDCBuilder.buildMdcContext(stack);
+        stackVerticalScaleV4Request.setStackId(stack.getId());
+        validateVerticalScalingRequest(stack, stackVerticalScaleV4Request);
+        return clusterCommonService.putVerticalScaling(stack.getResourceCrn(), stackVerticalScaleV4Request);
+    }
+
     private void validateScalingRequest(Stack stack, Integer scalingAdjustment) {
         if (scalingAdjustment > 0 && !cloudParameterCache.isUpScalingSupported(stack.cloudPlatform())) {
             throw new BadRequestException(String.format("Upscaling is not supported on %s cloudplatform", stack.cloudPlatform()));
@@ -297,6 +314,38 @@ public class StackCommonService {
             throw new BadRequestException(String.format("Downscaling is not supported on %s cloudplatform", stack.cloudPlatform()));
         }
         nodeCountLimitValidator.validateScale(stack.getId(), scalingAdjustment);
+    }
+
+    private void validateVerticalScalingRequest(Stack stack, StackVerticalScaleV4Request verticalScaleV4Request) {
+        if (!cloudParameterCache.isVerticalScalingSupported(stack.cloudPlatform())) {
+            throw new BadRequestException(String.format("Vertical scaling is not supported on %s cloudplatform", stack.cloudPlatform()));
+        }
+        if (verticalScaleV4Request.getTemplate() == null) {
+            throw new BadRequestException(String.format("Define an exiting instancetype to vertically scale the %s Data Hubs.", stack.cloudPlatform()));
+        }
+        if (verticalScaleV4Request.getTemplate().getInstanceType() == null) {
+            throw new BadRequestException(String.format("Define an exiting instancetype to vertically scale the %s Data Hubs.", stack.cloudPlatform()));
+        }
+        if (anyCloudSpecificPropertyDefinedInVerticalScalingRequest(verticalScaleV4Request)) {
+            throw new BadRequestException(String.format("Only instance type modification is supported on %s Data Hubs.", stack.cloudPlatform()));
+        }
+        if (anyAttachedVolumePropertyDefinedInVerticalScalingRequest(verticalScaleV4Request)) {
+            throw new BadRequestException(String.format("Only instance type modification is supported on %s Data Hubs.", stack.cloudPlatform()));
+        }
+    }
+
+    private boolean anyAttachedVolumePropertyDefinedInVerticalScalingRequest(StackVerticalScaleV4Request verticalScaleV4Request) {
+        return verticalScaleV4Request.getTemplate().getAttachedVolumes() != null
+                || verticalScaleV4Request.getTemplate().getRootVolume() != null
+                || verticalScaleV4Request.getTemplate().getTemporaryStorage() != null;
+    }
+
+    private boolean anyCloudSpecificPropertyDefinedInVerticalScalingRequest(StackVerticalScaleV4Request verticalScaleV4Request) {
+        return verticalScaleV4Request.getTemplate().getAws() != null
+                || verticalScaleV4Request.getTemplate().getAzure() != null
+                || verticalScaleV4Request.getTemplate().getGcp() != null
+                || verticalScaleV4Request.getTemplate().getMock() != null
+                || verticalScaleV4Request.getTemplate().getYarn() != null;
     }
 
     public void deleteWithKerberosInWorkspace(NameOrCrn nameOrCrn, Long workspaceId, boolean forced) {

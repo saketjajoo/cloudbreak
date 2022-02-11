@@ -12,10 +12,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.base.parameter.template.AwsInstanceTemplateV4Parameters;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.base.parameter.template.AzureInstanceTemplateV4Parameters;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.instancegroup.template.InstanceTemplateV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.instancegroup.template.volume.RootVolumeV4Request;
 import com.sequenceiq.cloudbreak.common.mappable.CloudPlatform;
+import com.sequenceiq.distrox.api.v1.distrox.model.instancegroup.template.AwsInstanceTemplateV1Parameters;
 import com.sequenceiq.distrox.api.v1.distrox.model.instancegroup.template.AzureInstanceTemplateV1Parameters;
 import com.sequenceiq.distrox.api.v1.distrox.model.instancegroup.template.InstanceTemplateV1Request;
 import com.sequenceiq.distrox.api.v1.distrox.model.instancegroup.template.volume.RootVolumeV1Request;
@@ -51,6 +53,8 @@ class InstanceTemplateV1ToInstanceTemplateV4ConverterTest {
         AzureInstanceTemplateV4Parameters azureInstanceTemplateV4Parameters = new AzureInstanceTemplateV4Parameters();
         when(instanceTemplateParameterConverter.convert(any(AzureInstanceTemplateV1Parameters.class), eq(environment)))
                 .thenReturn(azureInstanceTemplateV4Parameters);
+        when(instanceTemplateParameterConverter.convert(any(AwsInstanceTemplateV1Parameters.class), any(DetailedEnvironmentResponse.class)))
+                .thenReturn(new AwsInstanceTemplateV4Parameters());
 
         InstanceTemplateV4Request instanceTemplateV4Request = underTest.convert(source, environment);
 
@@ -72,6 +76,9 @@ class InstanceTemplateV1ToInstanceTemplateV4ConverterTest {
 
         RootVolumeV4Request rootVolumeV4Request = new RootVolumeV4Request();
         when(volumeConverter.convert(rootVolumeV1Request)).thenReturn(rootVolumeV4Request);
+
+        when(instanceTemplateParameterConverter.convert(any(AwsInstanceTemplateV1Parameters.class), any(DetailedEnvironmentResponse.class)))
+                .thenReturn(new AwsInstanceTemplateV4Parameters());
 
         AzureInstanceTemplateV4Parameters azureInstanceTemplateV4Parameters = new AzureInstanceTemplateV4Parameters();
         when(instanceTemplateParameterConverter.convert(azureInstanceTemplateV1Parameters, environment)).thenReturn(azureInstanceTemplateV4Parameters);

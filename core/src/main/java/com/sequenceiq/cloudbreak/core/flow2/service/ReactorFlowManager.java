@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.autoscales.request.InstanceGroupAdjustmentV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.CertificatesRotationV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.HostGroupAdjustmentV4Request;
+import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.StackVerticalScaleV4Request;
 import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
 import com.sequenceiq.cloudbreak.cloud.model.CloudPlatformVariant;
 import com.sequenceiq.cloudbreak.common.event.Acceptable;
@@ -47,6 +48,7 @@ import com.sequenceiq.cloudbreak.core.flow2.event.ClusterDownscaleDetails;
 import com.sequenceiq.cloudbreak.core.flow2.event.ClusterRecoveryTriggerEvent;
 import com.sequenceiq.cloudbreak.core.flow2.event.ClusterScaleTriggerEvent;
 import com.sequenceiq.cloudbreak.core.flow2.event.ClusterUpgradeTriggerEvent;
+import com.sequenceiq.cloudbreak.core.flow2.event.StackVerticalScalingTriggerEvent;
 import com.sequenceiq.cloudbreak.core.flow2.event.DatabaseBackupTriggerEvent;
 import com.sequenceiq.cloudbreak.core.flow2.event.DatabaseRestoreTriggerEvent;
 import com.sequenceiq.cloudbreak.core.flow2.event.DistroXUpgradeTriggerEvent;
@@ -231,6 +233,12 @@ public class ReactorFlowManager {
     public FlowIdentifier triggerClusterCredentialReplace(Long stackId, String userName, String password) {
         String selector = CLUSTER_CREDENTIALCHANGE_EVENT.event();
         ClusterCredentialChangeTriggerEvent event = new ClusterCredentialChangeTriggerEvent(selector, stackId, userName, password, Type.REPLACE);
+        return reactorNotifier.notify(stackId, selector, event);
+    }
+
+    public FlowIdentifier triggerVerticalScale(Long stackId, StackVerticalScaleV4Request request) {
+        String selector = CLUSTER_CREDENTIALCHANGE_EVENT.event();
+        StackVerticalScalingTriggerEvent event = new StackVerticalScalingTriggerEvent(selector, stackId);
         return reactorNotifier.notify(stackId, selector, event);
     }
 
