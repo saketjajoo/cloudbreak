@@ -6,11 +6,15 @@ import static com.sequenceiq.it.cloudbreak.context.RunningParameter.key;
 import static com.sequenceiq.it.cloudbreak.context.RunningParameter.waitForFlow;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
 
+import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.response.instancegroup.instancemetadata.InstanceMetaDataV4Response;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.testng.annotations.Test;
 
@@ -56,6 +60,8 @@ public class FreeIpaUpgradeTests extends AbstractE2ETest {
     private static final long TWO_HOURS_IN_SEC = 2L * 60 * 60;
 
     private static final long FIVE_MINUTES_IN_SEC = 5L * 60;
+
+    private static final String CHECK_DNS_LOOKUPS_CMD = "ping -c 2 %s | grep -q '%s'";
 
     @Inject
     private SdxTestClient sdxTestClient;
@@ -147,8 +153,8 @@ public class FreeIpaUpgradeTests extends AbstractE2ETest {
                 .validate();
     }
 
-    private FreeIpaOperationStatusTestDto testFreeIpaAvailabilityDuringUpgrade(TestContext testContext, FreeIpaOperationStatusTestDto testDto,
-            FreeIpaClient freeIpaClient, String freeIpa) {
+    private FreeIpaOperationStatusTestDto testFreeIpaAvailabilityDuringUpgrade(TestContext testContext,
+            FreeIpaOperationStatusTestDto testDto, FreeIpaClient freeIpaClient, String freeIpa) {
         try {
             com.sequenceiq.freeipa.api.client.FreeIpaClient ipaClient = freeIpaClient.getDefaultClient();
             FreeIpaTestDto freeIpaTestDto = testContext.get(freeIpa);
@@ -160,6 +166,7 @@ public class FreeIpaUpgradeTests extends AbstractE2ETest {
                 addListDeleteDnsZonesBySubnet(ipaClient, environmentCrn);
                 createBindUser(testContext, ipaClient, environmentCrn);
                 generateHostKeyTab(ipaClient, environmentCrn);
+                dnsLookups(testContext.given(SdxTestDto.class), testContext.getSdxClient());
                 cleanUp(testContext, ipaClient, environmentCrn);
                 kinit(testContext.given(SdxTestDto.class), testContext.getSdxClient());
                 syncUsers(testContext, ipaClient, environmentCrn, accountId);
@@ -298,6 +305,36 @@ public class FreeIpaUpgradeTests extends AbstractE2ETest {
         } catch (Exception e) {
             logger.error("FreeIPA upgrade kinit test failed with unexpected error", e);
             throw new TestFailException("FreeIPA upgrade kinit test failed with unexpected error: " + e.getMessage(), e);
+        }
+    }
+
+    private void dnsLookups(SdxTestDto sdxTestDto, SdxClient sdxClient) {
+        String fqdn = null;
+        String privateIP = "";
+        List<InstanceGroupV4Response> instanceGroups = getInstanceGroups(sdxTestDto, sdxClient);
+        InstanceMetaDataV4Response instanceGroupMetadata = instanceGroups.stream()
+                .flatMap(instanceGroup -> instanceGroup.getMetadata().stream())
+                .filter(metadata -> metadata.getInstanceGroup().equals("idbroker")).iterator().next();
+        if (instanceGroupMetadata == null) {
+            throw new TestFailException("FreeIPA upgrade DNS lookups test failed, idbroker instance group was not found.");
+        }
+        fqdn = instanceGroupMetadata.getDiscoveryFQDN();
+        privateIP = instanceGroupMetadata.getPrivateIp();
+        try {
+            String cmd = String.format(CHECK_DNS_LOOKUPS_CMD, fqdn, privateIP);
+            Map<String, Pair<Integer, String>> result = sshJClientActions.executeSshCommand(getInstanceGroups(sdxTestDto, sdxClient),
+                    List.of(HostGroupType.MASTER.getName()), cmd, false);
+            Iterator<Map.Entry<String, Pair<Integer, String>>> resultIterator = result.entrySet().iterator();
+            while (resultIterator.hasNext()) {
+                Integer status = resultIterator.next().getValue().getLeft();
+                Assertions.assertTrue(status == 0);
+                resultIterator.remove();
+            }
+        } catch (TestFailException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("FreeIPA upgrade DNS lookups test failed with unexpected error", e);
+            throw new TestFailException("FreeIPA upgrade DNS lookups test failed with unexpected error: " + e.getMessage(), e);
         }
     }
 
