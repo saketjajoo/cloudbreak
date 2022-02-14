@@ -3,12 +3,14 @@ package com.sequenceiq.cloudbreak.cm;
 import static com.sequenceiq.cloudbreak.api.endpoint.v4.common.Status.UPDATE_IN_PROGRESS;
 import static com.sequenceiq.cloudbreak.cmtemplate.CMRepositoryVersionUtil.CLOUDERAMANAGER_VERSION_7_1_0;
 import static com.sequenceiq.cloudbreak.cmtemplate.CMRepositoryVersionUtil.CLOUDERAMANAGER_VERSION_7_5_1;
+import static com.sequenceiq.cloudbreak.cmtemplate.CMRepositoryVersionUtil.CLOUDERAMANAGER_VERSION_7_6_0;
 import static com.sequenceiq.cloudbreak.cmtemplate.CMRepositoryVersionUtil.isVersionNewerOrEqualThanLimited;
 import static com.sequenceiq.cloudbreak.event.ResourceEvent.CLUSTER_CM_CLUSTER_SERVICES_STARTED;
 import static com.sequenceiq.cloudbreak.event.ResourceEvent.CLUSTER_CM_CLUSTER_SERVICES_STARTING;
 import static com.sequenceiq.cloudbreak.event.ResourceEvent.CLUSTER_CM_UPDATED_REMOTE_DATA_CONTEXT;
 import static com.sequenceiq.cloudbreak.event.ResourceEvent.CLUSTER_CM_UPDATING_REMOTE_DATA_CONTEXT;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +41,7 @@ import com.cloudera.api.swagger.MgmtServiceResourceApi;
 import com.cloudera.api.swagger.ParcelResourceApi;
 import com.cloudera.api.swagger.ParcelsResourceApi;
 import com.cloudera.api.swagger.ServicesResourceApi;
+import com.cloudera.api.swagger.client.ApiCallback;
 import com.cloudera.api.swagger.client.ApiClient;
 import com.cloudera.api.swagger.client.ApiException;
 import com.cloudera.api.swagger.model.ApiBatchRequest;
@@ -47,6 +50,7 @@ import com.cloudera.api.swagger.model.ApiBatchResponse;
 import com.cloudera.api.swagger.model.ApiCommand;
 import com.cloudera.api.swagger.model.ApiCommandList;
 import com.cloudera.api.swagger.model.ApiConfigStalenessStatus;
+import com.cloudera.api.swagger.model.ApiEntityTag;
 import com.cloudera.api.swagger.model.ApiHost;
 import com.cloudera.api.swagger.model.ApiHostRef;
 import com.cloudera.api.swagger.model.ApiHostRefList;
@@ -78,6 +82,7 @@ import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.ClusterComponent;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.host.HostGroup;
+import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceMetaData;
 import com.sequenceiq.cloudbreak.event.ResourceEvent;
 import com.sequenceiq.cloudbreak.polling.ExtendedPollingResult;
@@ -86,6 +91,7 @@ import com.sequenceiq.cloudbreak.service.CloudbreakException;
 import com.sequenceiq.cloudbreak.structuredevent.event.CloudbreakEventService;
 import com.sequenceiq.cloudbreak.util.URLUtils;
 import com.sequenceiq.common.api.telemetry.model.Telemetry;
+import com.squareup.okhttp.Call;
 
 @Service
 @Scope("prototype")
@@ -96,6 +102,8 @@ public class ClouderaManagerModificationService implements ClusterModificationSe
     private static final Logger LOGGER = LoggerFactory.getLogger(ClouderaManagerModificationService.class);
 
     private static final Boolean START_ROLES_ON_UPSCALED_NODES = Boolean.TRUE;
+
+    private static final String HOST_TEMPLATE_NAME_TAG = "_cldr_cm_host_template_name";
 
     @Inject
     private ClouderaManagerApiClientProvider clouderaManagerApiClientProvider;
@@ -141,6 +149,9 @@ public class ClouderaManagerModificationService implements ClusterModificationSe
 
     @Inject
     private ApplicationContext applicationContext;
+
+    @Inject
+    private ClusterComponentConfigProvider clusterComponentProvider;
 
     private final Stack stack;
 
@@ -246,6 +257,7 @@ public class ClouderaManagerModificationService implements ClusterModificationSe
 
             startClouderaManager();
             startAgents();
+            tagHostsWithHostTemplateName();
             checkParcelApiAvailability();
 
             refreshRemoteDataContextFromDatalakeInCaseOfDatahub(remoteDataContext);
@@ -272,6 +284,91 @@ public class ClouderaManagerModificationService implements ClusterModificationSe
             LOGGER.info("Could not upgrade Cloudera Runtime services", e);
             throw new ClouderaManagerOperationFailedException(e.getMessage(), e);
         }
+    }
+
+    private void tagHostsWithHostTemplateName() throws ApiException, CloudbreakException {
+        ClouderaManagerRepo clouderaManagerRepoDetails = clusterComponentProvider.getClouderaManagerRepoDetails(stack.getCluster().getId());
+        if (!isVersionNewerOrEqualThanLimited(clouderaManagerRepoDetails::getVersion, CLOUDERAMANAGER_VERSION_7_6_0)) {
+            LOGGER.info("Skipping host tagging. Cloudera Manager version needs to be equal or higher, than 7.6.0.");
+            return;
+        }
+        LOGGER.info("Tagging hosts after runtime upgrade.");
+        ApiClient v46Client = buildv46ApiClient();
+        ClustersResourceApi clustersResourceApi = clouderaManagerApiFactory.getClustersResourceApi(v46Client);
+        HostsResourceApi hostsResourceApi = clouderaManagerApiFactory.getHostsResourceApi(v46Client);
+        String clusterName = stack.getName();
+        Set<String> hostnamesFromCM = getClusterHostnamesFromCM(clustersResourceApi, clusterName);
+        Set<Call> callSet = Optional.of(stack).map(Stack::getInstanceGroups).stream().flatMap(Set::stream)
+                .map(asyncTagHostsInHostGroup(hostsResourceApi, hostnamesFromCM))
+                .flatMap(Set::stream)
+                .collect(Collectors.toSet());
+
+        callSet.forEach(call -> {
+            try {
+                if (!call.isExecuted()) {
+                    call.execute();
+                }
+            } catch (IOException e) {
+                LOGGER.info("Error while executing tagging.", e);
+                throw new ClouderaManagerOperationFailedException(e.getMessage(), e);
+            }
+        });
+    }
+
+    private ApiClient buildv46ApiClient() throws CloudbreakException {
+        ApiClient v46Client;
+        Cluster cluster = stack.getCluster();
+        String user = cluster.getCloudbreakAmbariUser();
+        String password = cluster.getCloudbreakAmbariPassword();
+        try {
+            v46Client = clouderaManagerApiClientProvider.getV46Client(stack.getGatewayPort(), user, password, clientConfig);
+        } catch (ClouderaManagerClientInitException e) {
+            LOGGER.error("Failed to init V46 client.", e);
+            throw new CloudbreakException(e);
+        }
+        return v46Client;
+    }
+
+    private Function<InstanceGroup, Set<Call>> asyncTagHostsInHostGroup(HostsResourceApi hostsResourceApi, Set<String> hostnamesFromCM) {
+        return instanceGroup -> Optional.ofNullable(instanceGroup).map(InstanceGroup::getNotDeletedInstanceMetaDataSet)
+                .stream().flatMap(Set::stream)
+                .map(InstanceMetaData::getDiscoveryFQDN)
+                .filter(hostnamesFromCM::contains)
+                .map(asyncTagHost(hostsResourceApi, instanceGroup))
+                .collect(Collectors.toSet());
+    }
+
+    private Function<String, Call> asyncTagHost(HostsResourceApi hostsResourceApi, InstanceGroup instanceGroup) {
+        return hostname -> {
+            ApiEntityTag tag = new ApiEntityTag().name(HOST_TEMPLATE_NAME_TAG).value(instanceGroup.getGroupName());
+            try {
+                ApiCallback<List<ApiEntityTag>> callback = new ApiCallback<>() {
+                    @Override
+                    public void onFailure(ApiException e, int i, Map<String, List<String>> map) {
+                        LOGGER.error("Tagging failed for host [{}]: {}. Response headers: {}", hostname, e.getMessage(), map, e);
+                        throw new ClouderaManagerOperationFailedException(e.getMessage(), e);
+                    }
+
+                    @Override
+                    public void onSuccess(List<ApiEntityTag> apiEntityTags, int i, Map<String, List<String>> map) {
+                        LOGGER.debug("Tagging successful for host: [{}]. Body: {}, headers: {}", hostname, apiEntityTags, map);
+                    }
+
+                    @Override
+                    public void onUploadProgress(long l, long l1, boolean b) {
+                    }
+
+                    @Override
+                    public void onDownloadProgress(long l, long l1, boolean b) {
+                    }
+                };
+                LOGGER.debug("Tagging host [{}] with [{}]", hostname, tag);
+                return hostsResourceApi.addTagsAsync(hostname, List.of(tag), callback);
+            } catch (ApiException e) {
+                LOGGER.error("Error while tagging host: [{}]", hostname, e);
+                throw new ClouderaManagerOperationFailedException(e.getMessage(), e);
+            }
+        };
     }
 
     @Override
