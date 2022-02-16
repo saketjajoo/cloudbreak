@@ -259,14 +259,19 @@ public abstract class AbstractResourceConnector implements ResourceConnector<Lis
 
         //group
         List<CloudResource> groupResources = groupResourceService.getGroupResources(variant, resources);
-        List<CloudResourceStatus> groupStatuses = groupResourceService.update(context, auth, stack.getNetwork(), stack.getCloudSecurity(), groupResources);
+        List<CloudResourceStatus> cloudResourceStatuses = groupResourceService.update(context, auth, stack.getNetwork(), stack.getCloudSecurity(), groupResources);
 
         //network
         List<CloudResource> networkResources = networkResourceService.getNetworkResources(variant, resources);
         List<CloudResourceStatus> networkStatuses = networkResourceService.update(context, auth, stack.getNetwork(), stack.getCloudSecurity(), networkResources);
+        cloudResourceStatuses.addAll(networkStatuses);
 
-        groupStatuses.addAll(networkStatuses);
-        return groupStatuses;
+        //compute
+        List<CloudResource> computeResources = computeResourceService.getComputeResources(variant, resources);
+        List<CloudResourceStatus> computeStatuses = computeResourceService.update(context, auth, stack, computeResources);
+        cloudResourceStatuses.addAll(computeStatuses);
+
+        return cloudResourceStatuses;
     }
 
     @Override

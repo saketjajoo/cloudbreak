@@ -46,6 +46,11 @@ public class AwsNativeLoadBalancerTargetGroupResourceBuilder extends AbstractAws
     }
 
     @Override
+    public List<CloudResource> update(AwsContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
+    @Override
     public CloudResource delete(AwsContext context, com.sequenceiq.cloudbreak.cloud.context.AuthenticatedContext auth, CloudResource resource)
             throws Exception {
         LOGGER.info("Deleting load balancer's ('{}') target group with arn '{}'", resource.getReference(), resource.getInstanceId());

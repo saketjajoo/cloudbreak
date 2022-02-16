@@ -28,15 +28,32 @@ public class ResourceActionFactory {
     private PersistenceNotifier persistenceNotifier;
 
     public ResourceCreationCallable buildCreationCallable(ResourceCreationCallablePayload payload) {
-        return new ResourceCreationCallable(payload, resourceBuilders, syncPollingScheduler,
-                resourcePollTaskFactory, persistenceNotifier);
+        return new ResourceCreationCallable(
+                payload,
+                resourceBuilders,
+                syncPollingScheduler,
+                resourcePollTaskFactory,
+                persistenceNotifier);
     }
 
     public ResourceDeletionCallable buildDeletionCallable(ResourceDeletionCallablePayload payload) {
-        return new ResourceDeletionCallable(payload, syncPollingScheduler, resourcePollTaskFactory, persistenceNotifier);
+        return new ResourceDeletionCallable(
+                payload,
+                syncPollingScheduler,
+                resourcePollTaskFactory,
+                persistenceNotifier);
     }
 
     public ResourceStopStartCallable buildStopStartCallable(ResourceStopStartCallablePayload payload) {
         return new ResourceStopStartCallable(payload);
+    }
+
+    public ResourceUpdateCallable buildUpdateCallable(ResourceUpdateCallablePayload payload) {
+        return new ResourceUpdateCallable(
+                payload,
+                resourceBuilders,
+                syncPollingScheduler,
+                resourcePollTaskFactory,
+                persistenceNotifier);
     }
 }

@@ -222,6 +222,11 @@ public class GcpInstanceResourceBuilder extends AbstractGcpComputeBuilder {
         }
     }
 
+    @Override
+    public List<CloudResource> update(GcpContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
     /**
      * if a InstanceGroup was created in GCP for this Instance's group, then after creating this compute instance assign it to that group.
      * the group in general can be used to manage all instances in the same group, specifiaclly one way is used to assign to a load balancer.

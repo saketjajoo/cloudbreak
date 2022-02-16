@@ -197,6 +197,11 @@ public class AzureVolumeResourceBuilder extends AbstractAzureComputeBuilder {
                 .collect(toList());
     }
 
+    @Override
+    public List<CloudResource> update(AzureContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
     private String getDiskEncryptionSetId(Group group) {
         CloudInstance cloudInstance = group.getReferenceInstanceConfiguration();
         AzureInstanceView azureInstanceView = AzureInstanceView.builder(cloudInstance).build();

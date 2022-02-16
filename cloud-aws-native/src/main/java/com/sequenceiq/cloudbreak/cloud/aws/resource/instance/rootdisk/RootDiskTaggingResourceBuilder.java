@@ -62,6 +62,11 @@ public class RootDiskTaggingResourceBuilder extends AbstractAwsNativeComputeBuil
     }
 
     @Override
+    public List<CloudResource> update(AwsContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
+    @Override
     public CloudResource delete(AwsContext context, AuthenticatedContext auth, CloudResource resource) throws Exception {
         return null;
     }

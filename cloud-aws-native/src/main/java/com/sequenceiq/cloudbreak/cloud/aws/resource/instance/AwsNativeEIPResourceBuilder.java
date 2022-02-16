@@ -137,6 +137,11 @@ public class AwsNativeEIPResourceBuilder extends AbstractAwsNativeComputeBuilder
     }
 
     @Override
+    public List<CloudResource> update(AwsContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
+    @Override
     protected boolean isFinished(AwsContext context, AuthenticatedContext auth, CloudResource resource) {
         return true;
     }

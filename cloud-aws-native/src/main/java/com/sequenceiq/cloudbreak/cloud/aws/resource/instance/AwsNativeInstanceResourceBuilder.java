@@ -141,6 +141,11 @@ public class AwsNativeInstanceResourceBuilder extends AbstractAwsNativeComputeBu
         return buildableResource;
     }
 
+    @Override
+    public List<CloudResource> update(AwsContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
     String getSecurityGroupId(AwsContext context, Group group) {
         List<CloudResource> groupResources = context.getGroupResources(group.getName());
         String securityGroupId = null;

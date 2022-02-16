@@ -83,6 +83,11 @@ public class AzureAttachmentResourceBuilder extends AbstractAzureComputeBuilder 
         return List.of(volumeSet);
     }
 
+    @Override
+    public List<CloudResource> update(AzureContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
     private void detachDiskFromVmByVmId(AzureClient client, Disk disk) {
         VirtualMachine vm = client.getVirtualMachine(disk.virtualMachineId());
         LOGGER.info("Going to detach disk ([id: {}]) from virtual machine ([id: {}])", disk.id(), vm.vmId());

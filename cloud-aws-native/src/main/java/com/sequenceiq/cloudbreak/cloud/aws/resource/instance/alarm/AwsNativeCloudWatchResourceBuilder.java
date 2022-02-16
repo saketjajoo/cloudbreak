@@ -71,6 +71,11 @@ public class AwsNativeCloudWatchResourceBuilder extends AbstractAwsNativeCompute
     }
 
     @Override
+    public List<CloudResource> update(AwsContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
+    @Override
     public CloudResource delete(AwsContext context, AuthenticatedContext auth, CloudResource resource) throws Exception {
         String region = context.getLocation().getRegion().getRegionName();
         AwsCredentialView credential = new AwsCredentialView(auth.getCloudCredential());

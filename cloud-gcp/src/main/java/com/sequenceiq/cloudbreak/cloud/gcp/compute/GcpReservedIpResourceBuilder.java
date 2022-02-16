@@ -50,6 +50,11 @@ public class GcpReservedIpResourceBuilder extends AbstractGcpComputeBuilder {
         return buildReservedIp(context, buildableResource, cloudStack, GcpLoadBalancerScheme.EXTERNAL);
     }
 
+    @Override
+    public List<CloudResource> update(GcpContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
     public List<CloudResource> buildReservedIp(GcpContext context, List<CloudResource> buildableResource,
             CloudStack cloudStack, GcpLoadBalancerScheme type) throws Exception {
         List<CloudResource> result = new ArrayList<>();

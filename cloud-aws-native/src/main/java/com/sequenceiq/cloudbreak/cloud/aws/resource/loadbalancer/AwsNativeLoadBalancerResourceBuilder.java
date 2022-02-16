@@ -46,6 +46,11 @@ public class AwsNativeLoadBalancerResourceBuilder extends AbstractAwsNativeCompu
     }
 
     @Override
+    public List<CloudResource> update(AwsContext context, CloudInstance instance, long privateId, AuthenticatedContext auth, Group group, CloudStack cloudStack) throws Exception {
+        return null;
+    }
+
+    @Override
     public CloudResource delete(AwsContext context, AuthenticatedContext auth, CloudResource resource) throws Exception {
         LOGGER.info("Deleting load balancer ('{}') from provider side", resource.getReference());
         AmazonElasticLoadBalancingClient loadBalancingClient = context.getLoadBalancingClient();
