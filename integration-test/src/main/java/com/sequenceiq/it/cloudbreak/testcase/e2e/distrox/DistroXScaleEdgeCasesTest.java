@@ -1,5 +1,6 @@
 package com.sequenceiq.it.cloudbreak.testcase.e2e.distrox;
 
+import static com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.base.InstanceStatus.DELETED_ON_PROVIDER_SIDE;
 import static com.sequenceiq.it.cloudbreak.cloud.HostGroupType.WORKER;
 
 import java.util.List;
@@ -46,11 +47,11 @@ public class DistroXScaleEdgeCasesTest extends AbstractE2ETest {
                     List<String> instancesToDelete = distroxUtil.getInstanceIds(testDto, client, WORKER.getName()).stream()
                             .limit(1).collect(Collectors.toList());
                     testContext.getCloudProvider().getCloudFunctionality().deleteInstances(testDto.getName(), instancesToDelete);
-                    testDto.setRemovableInstanceId(instancesToDelete.iterator().next());
+                    testDto.setRemovableInstanceId(List.of(instancesToDelete.iterator().next()));
                     return testDto;
                 })
-                .awaitForRemovableInstance()
-                .when(distroXTestClient.removeInstance())
+                .awaitForInstancesByState(DELETED_ON_PROVIDER_SIDE)
+                .when(distroXTestClient.removeInstances())
                 .await(STACK_AVAILABLE)
                 .validate();
     }
