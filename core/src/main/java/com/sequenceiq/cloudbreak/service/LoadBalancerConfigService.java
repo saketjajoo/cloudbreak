@@ -70,6 +70,8 @@ public class LoadBalancerConfigService {
 
     private static final String ENDPOINT_SUFFIX = "gateway";
 
+    private static final String INTERNAL_DISABLE_LOADBALANCERS_TAG_KEY = "cloudera:internal:disable-loadbalancer";
+
     @Value("${cb.https.port:443}")
     private String httpsPort;
 
@@ -107,9 +109,9 @@ public class LoadBalancerConfigService {
         if (groupNames.isEmpty()) {
             LOGGER.debug("Knox gateway is not explicitly defined; searching for CM gateway hosts");
             groupNames = stack.getInstanceGroups().stream()
-                .filter(i -> InstanceGroupType.isGateway(i.getInstanceGroupType()))
-                .map(InstanceGroup::getGroupName)
-                .collect(Collectors.toSet());
+                    .filter(i -> InstanceGroupType.isGateway(i.getInstanceGroupType()))
+                    .map(InstanceGroup::getGroupName)
+                    .collect(Collectors.toSet());
         }
 
         if (groupNames.isEmpty()) {
@@ -127,9 +129,9 @@ public class LoadBalancerConfigService {
 
     public String generateLoadBalancerEndpoint(Stack stack) {
         StringBuilder name = new StringBuilder()
-            .append(stack.getName())
-            .append('-')
-            .append(ENDPOINT_SUFFIX);
+                .append(stack.getName())
+                .append('-')
+                .append(ENDPOINT_SUFFIX);
         return name.toString();
     }
 
@@ -183,14 +185,14 @@ public class LoadBalancerConfigService {
     public Optional<LoadBalancer> selectLoadBalancer(Set<LoadBalancer> loadBalancers, LoadBalancerType preferredType) {
         Preconditions.checkNotNull(preferredType);
         Optional<LoadBalancer> loadBalancerOptional = loadBalancers.stream()
-            .filter(lb -> preferredType.equals(lb.getType()))
-            .findFirst();
+                .filter(lb -> preferredType.equals(lb.getType()))
+                .findFirst();
         if (loadBalancerOptional.isPresent()) {
             LOGGER.debug("Found load balancer of type {}", preferredType);
         } else {
             loadBalancerOptional = loadBalancers.stream()
-                .filter(lb -> lb.getType() != null && !preferredType.equals(lb.getType()))
-                .findFirst();
+                    .filter(lb -> lb.getType() != null && !preferredType.equals(lb.getType()))
+                    .findFirst();
             loadBalancerOptional.ifPresent(loadBalancer ->
                     LOGGER.debug("Could not find load balancer of preferred type {}. Using type {}", preferredType, loadBalancer.getType()));
         }
@@ -233,7 +235,7 @@ public class LoadBalancerConfigService {
      * This method updates the JSON parameters associated with certain instance groups.
      *
      * @param availabilitySetPrefix A string prefix. Should be a stack name normally.
-     * @param loadBalancers the list of load balancers to look up target groups from.
+     * @param loadBalancers         the list of load balancers to look up target groups from.
      */
     public void configureLoadBalancerAvailabilitySets(String availabilitySetPrefix, Set<LoadBalancer> loadBalancers) {
         getKnoxInstanceGroups(loadBalancers)
@@ -261,16 +263,17 @@ public class LoadBalancerConfigService {
 
     private Set<InstanceGroup> getInstanceGroups(Set<LoadBalancer> loadBalancers, TargetGroupType type) {
         return loadBalancers.stream()
-            .flatMap(loadBalancer -> loadBalancer.getTargetGroupSet().stream())
-            .filter(targetGroup -> type.equals(targetGroup.getType()))
-            .flatMap(targetGroup -> targetGroup.getInstanceGroups().stream())
-            .collect(Collectors.toSet());
+                .flatMap(loadBalancer -> loadBalancer.getTargetGroupSet().stream())
+                .filter(targetGroup -> type.equals(targetGroup.getType()))
+                .flatMap(targetGroup -> targetGroup.getInstanceGroups().stream())
+                .collect(Collectors.toSet());
     }
 
     /**
      * Sets the SKU of each load balancer to either the SKU provided in the Azure stack request, or
      * to the default SKU value.
-     * @param source The original StackV4Request for this stack.
+     *
+     * @param source        The original StackV4Request for this stack.
      * @param loadBalancers The list of load balancers to update.
      */
     public void configureLoadBalancerSku(StackV4Request source, Set<LoadBalancer> loadBalancers) {
@@ -319,7 +322,7 @@ public class LoadBalancerConfigService {
     }
 
     private void setupKnoxLoadbalancing(Stack stack, DetailedEnvironmentResponse environment,
-        boolean dryRun, Set<LoadBalancer> loadBalancers) {
+            boolean dryRun, Set<LoadBalancer> loadBalancers) {
         Optional<TargetGroup> knoxTargetGroup = setupKnoxTargetGroup(stack, dryRun);
         if (knoxTargetGroup.isPresent()) {
             if (environment != null && isNetworkUsingPrivateSubnet(stack.getNetwork(), environment.getNetwork())) {
@@ -346,8 +349,8 @@ public class LoadBalancerConfigService {
         } else {
             LOGGER.debug("Found {} enabled instance groups in stack. Setting up {} load balancer.", targetGroup.getType(), type);
             setupLoadBalancerWithTargetGroup(
-                createLoadBalancerIfNotExists(loadBalancers, type, stack),
-                targetGroup);
+                    createLoadBalancerIfNotExists(loadBalancers, type, stack),
+                    targetGroup);
         }
     }
 
@@ -403,15 +406,19 @@ public class LoadBalancerConfigService {
     }
 
     private boolean isLoadBalancerEnabled(StackType type, String cloudPlatform, DetailedEnvironmentResponse environment, boolean flagEnabled) {
-        return getSupportedPlatforms().contains(cloudPlatform) &&
-            (flagEnabled || isLoadBalancerEnabledForDatalake(type, environment) || isLoadBalancerEnabledForDatahub(type, environment));
+        return getSupportedPlatforms().contains(cloudPlatform) && !isNoLoadBalancerInternal(environment) &&
+                (flagEnabled || isLoadBalancerEnabledForDatalake(type, environment) || isLoadBalancerEnabledForDatahub(type, environment));
+    }
+
+    private boolean isNoLoadBalancerInternal(DetailedEnvironmentResponse environment) {
+        return environment != null && environment.getTagValue(INTERNAL_DISABLE_LOADBALANCERS_TAG_KEY) != null;
     }
 
     private boolean isLoadBalancerEnabledForDatalake(StackType type, DetailedEnvironmentResponse environment) {
         return StackType.DATALAKE.equals(type) && environment != null &&
                 (entitlementService.datalakeLoadBalancerEnabled(ThreadBasedUserCrnProvider.getAccountId()) ||
-                !isLoadBalancerEntitlementRequiredForCloudProvider(environment.getCloudPlatform()) ||
-                isEndpointGatewayEnabled(environment.getNetwork()));
+                        !isLoadBalancerEntitlementRequiredForCloudProvider(environment.getCloudPlatform()) ||
+                        isEndpointGatewayEnabled(environment.getNetwork()));
     }
 
     private boolean isLoadBalancerEntitlementRequiredForCloudProvider(String cloudPlatform) {
@@ -442,8 +449,8 @@ public class LoadBalancerConfigService {
         TargetGroup knoxTargetGroup = null;
         Set<String> knoxGatewayGroupNames = getKnoxGatewayGroups(stack);
         Set<InstanceGroup> knoxGatewayInstanceGroups = stack.getInstanceGroups().stream()
-            .filter(ig -> knoxGatewayGroupNames.contains(ig.getGroupName()))
-            .collect(Collectors.toSet());
+                .filter(ig -> knoxGatewayGroupNames.contains(ig.getGroupName()))
+                .collect(Collectors.toSet());
 
         if (AZURE.equalsIgnoreCase(stack.getCloudPlatform()) && knoxGatewayInstanceGroups.size() > 1) {
             throw new CloudbreakServiceException("For Azure load balancers, Knox must be defined in a single instance group.");
@@ -496,9 +503,9 @@ public class LoadBalancerConfigService {
             if (cdhVersion != null && isVersionNewerOrEqualThanLimited(cdhVersion, CLOUDERA_STACK_VERSION_7_2_11)) {
                 Set<String> oozieGroupNames = getOozieGroups(cmTemplateProcessor);
                 return stack.getInstanceGroups().stream()
-                    .filter(ig -> oozieGroupNames.contains(ig.getGroupName()))
-                    .filter(ig -> ig.getNodeCount() > 1)
-                    .findFirst();
+                        .filter(ig -> oozieGroupNames.contains(ig.getGroupName()))
+                        .filter(ig -> ig.getNodeCount() > 1)
+                        .findFirst();
             }
         }
         return Optional.empty();
@@ -507,8 +514,8 @@ public class LoadBalancerConfigService {
     private LoadBalancer createLoadBalancerIfNotExists(Set<LoadBalancer> loadBalancers, LoadBalancerType type, Stack stack) {
         LoadBalancer loadBalancer;
         Optional<LoadBalancer> existingLoadBalancer = loadBalancers.stream()
-            .filter(lb -> lb.getType() == type)
-            .findFirst();
+                .filter(lb -> lb.getType() == type)
+                .findFirst();
         if (existingLoadBalancer.isPresent()) {
             loadBalancer = existingLoadBalancer.get();
         } else {

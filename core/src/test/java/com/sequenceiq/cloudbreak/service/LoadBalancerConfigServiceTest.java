@@ -60,6 +60,7 @@ import com.sequenceiq.common.api.type.LoadBalancerType;
 import com.sequenceiq.common.api.type.PublicEndpointAccessGateway;
 import com.sequenceiq.environment.api.v1.environment.model.response.DetailedEnvironmentResponse;
 import com.sequenceiq.environment.api.v1.environment.model.response.EnvironmentNetworkResponse;
+import com.sequenceiq.environment.api.v1.environment.model.response.TagResponse;
 
 public class LoadBalancerConfigServiceTest extends SubnetTest {
 
@@ -194,6 +195,29 @@ public class LoadBalancerConfigServiceTest extends SubnetTest {
                 .filter(ig -> "master".equals(ig.getGroupName()))
                 .findFirst().get();
             assertEquals(1, masterInstanceGroup.getTargetGroups().size());
+        });
+    }
+
+    @Test
+    public void testDisableCreationInternalTag() {
+        Stack stack = createAwsStack(StackType.DATALAKE, PUBLIC_ID_1);
+        CloudSubnet subnet = getPublicCloudSubnet(PUBLIC_ID_1, AZ_1);
+        DetailedEnvironmentResponse environment = createEnvironment(subnet, false);
+        Map<String, String> userValues = new HashMap<>();
+        userValues.put("cloudera:internal:disable-loadbalancer", "true");
+        TagResponse tags = new TagResponse();
+        tags.setUserDefined(userValues);
+        environment.setTags(tags);
+        StackV4Request request = new StackV4Request();
+        request.setEnableLoadBalancer(false);
+
+        when(entitlementService.datalakeLoadBalancerEnabled(anyString())).thenReturn(true);
+        when(blueprint.getBlueprintText()).thenReturn(getBlueprintText("input/clouderamanager-knox.bp"));
+        when(subnetSelector.findSubnetById(any(), anyString())).thenReturn(Optional.of(subnet));
+
+        ThreadBasedUserCrnProvider.doAs(USER_CRN, () -> {
+            Set<LoadBalancer> loadBalancers = underTest.createLoadBalancers(stack, environment, request);
+            assertEquals(0, loadBalancers.size());
         });
     }
 
