@@ -510,13 +510,18 @@ public class StackService implements ResourceIdProvider, ResourcePropertyProvide
     public Stack getByNameOrCrnInWorkspace(NameOrCrn nameOrCrn, Long workspaceId) {
         Optional<Stack> foundStack = nameOrCrn.hasName()
                 ? stackRepository.findByNameAndWorkspaceId(nameOrCrn.getName(), workspaceId)
-                : stackRepository.findByCrnAndWorkspaceId(nameOrCrn.getCrn(), workspaceId);
+                : stackRepository.findNotTerminatedByCrnAndWorkspaceId(nameOrCrn.getCrn(), workspaceId);
         return foundStack.orElseThrow(() -> new NotFoundException(String.format(STACK_NOT_FOUND_BY_NAME_OR_CRN_EXCEPTION_MESSAGE, nameOrCrn)));
     }
 
     public Stack getByNameInWorkspace(String name, Long workspaceId) {
         return stackRepository.findByNameAndWorkspaceId(name, workspaceId)
                 .orElseThrow(() -> new NotFoundException(format(STACK_NOT_FOUND_BY_NAME_EXCEPTION_MESSAGE, name)));
+    }
+
+    public Stack getNotTerminatedByCrnInWorkspace(String crn, Long workspaceId) {
+        return stackRepository.findNotTerminatedByCrnAndWorkspaceId(crn, workspaceId)
+                .orElseThrow(() -> new NotFoundException(format(STACK_NOT_FOUND_BY_CRN_EXCEPTION_MESSAGE, crn)));
     }
 
     public Stack getByCrnInWorkspace(String crn, Long workspaceId) {
@@ -529,8 +534,13 @@ public class StackService implements ResourceIdProvider, ResourcePropertyProvide
                 .orElseThrow(() -> new NotFoundException(format(STACK_NOT_FOUND_BY_NAME_EXCEPTION_MESSAGE, name)));
     }
 
-    public StackView getViewByCrnInWorkspace(String crn, Long workspaceId) {
+    public StackView getNotTerminatedViewByCrnInWorkspace(String crn, Long workspaceId) {
         return stackViewService.findNotTerminatedByCrn(crn, workspaceId)
+                .orElseThrow(() -> new NotFoundException(format(STACK_NOT_FOUND_BY_CRN_EXCEPTION_MESSAGE, crn)));
+    }
+
+    public StackView getViewByCrnInWorkspace(String crn, Long workspaceId) {
+        return stackViewService.findByCrn(crn, workspaceId)
                 .orElseThrow(() -> new NotFoundException(format(STACK_NOT_FOUND_BY_CRN_EXCEPTION_MESSAGE, crn)));
     }
 

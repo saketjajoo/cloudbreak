@@ -129,7 +129,7 @@ public class SdxEventsService {
         List<CloudbreakEventV4Response> cloudbreakEventV4Responses;
         try {
             cloudbreakEventV4Responses = ThreadBasedUserCrnProvider.doAsInternalActor(() ->
-                    eventV4Endpoint.getPagedCloudbreakEventListByStack(sdxCluster.getName(), page, size, getAccountId(sdxCluster.getEnvCrn())));
+                    eventV4Endpoint.getPagedCloudbreakEventListByCrn(sdxCluster.getCrn(), page, size, false));
         } catch (Exception exception) {
             cloudbreakEventV4Responses = List.of();
         }
@@ -139,7 +139,8 @@ public class SdxEventsService {
 
     private List<CDPStructuredEvent> retrieveCloudbreakServiceEvents(SdxCluster sdxCluster) {
         try {
-            StructuredEventContainer structuredEventContainer = eventV4Endpoint.structured(sdxCluster.getName(), getAccountId(sdxCluster.getEnvCrn()));
+            StructuredEventContainer structuredEventContainer = ThreadBasedUserCrnProvider.doAsInternalActor(() ->
+                    eventV4Endpoint.structuredByCrn(sdxCluster.getCrn(), false));
             // Translate the cloudbreak events
             return structuredEventContainer.getNotification().stream().map(entry -> convert(entry, sdxCluster.getCrn())).collect(Collectors.toList());
         } catch (Exception exception) {

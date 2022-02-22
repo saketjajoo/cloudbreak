@@ -304,7 +304,7 @@ public class StackOperations implements ResourcePropertyProvider {
     public FlowIdentifier putPassword(@NotNull NameOrCrn nameOrCrn, Long workspaceId, @Valid UserNamePasswordV4Request userNamePasswordJson) {
         Stack stack = nameOrCrn.hasName()
                 ? stackService.getByNameInWorkspace(nameOrCrn.getName(), workspaceId)
-                : stackService.getByCrnInWorkspace(nameOrCrn.getCrn(), workspaceId);
+                : stackService.getNotTerminatedByCrnInWorkspace(nameOrCrn.getCrn(), workspaceId);
         UpdateClusterV4Request updateClusterJson = userNamePasswordV4RequestToUpdateClusterV4RequestConverter.convert(userNamePasswordJson);
         return clusterCommonService.put(stack.getResourceCrn(), updateClusterJson);
     }
@@ -330,7 +330,7 @@ public class StackOperations implements ResourcePropertyProvider {
     }
 
     public Stack getStackByCrn(String crn) {
-        return stackService.getByCrnInWorkspace(crn, workspaceService.getForCurrentUser().getId());
+        return stackService.getNotTerminatedByCrnInWorkspace(crn, workspaceService.getForCurrentUser().getId());
     }
 
     public List<RetryableFlow> getRetryableFlows(String name, Long workspaceId) {
