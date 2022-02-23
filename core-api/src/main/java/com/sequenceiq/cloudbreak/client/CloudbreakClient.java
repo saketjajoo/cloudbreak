@@ -24,6 +24,7 @@ import com.sequenceiq.distrox.api.v1.distrox.endpoint.DistroXUpgradeV1Endpoint;
 import com.sequenceiq.distrox.api.v1.distrox.endpoint.DistroXV1Endpoint;
 import com.sequenceiq.flow.api.FlowEndpoint;
 import com.sequenceiq.flow.api.FlowPublicEndpoint;
+import com.sequenceiq.cloudbreak.api.endpoint.v4.events.EventV4Endpoint;
 
 public interface CloudbreakClient {
 
@@ -74,4 +75,6 @@ public interface CloudbreakClient {
     DistroXDatabaseServerV1Endpoint distroXDatabaseServerV1Endpoint();
 
     AuthorizationUtilEndpoint authorizationUtilEndpoint();
+
+    EventV4Endpoint eventV4Endpoint();
 }

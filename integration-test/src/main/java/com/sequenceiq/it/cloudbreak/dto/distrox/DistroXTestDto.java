@@ -187,7 +187,7 @@ public class DistroXTestDto extends DistroXTestDtoBase<DistroXTestDto> implement
         return awaitForInstance(instanceStatusMap);
     }
 
-    public DistroXTestDto awaitForInstancesByState(InstanceStatus instanceStatus) {
+    public DistroXTestDto awaitForRemovableInstancesByState(InstanceStatus instanceStatus) {
         if (!getRemovableInstanceIds().isEmpty()) {
             return awaitForInstance(Map.of(getRemovableInstanceIds(), instanceStatus));
         } else {
@@ -341,7 +341,7 @@ public class DistroXTestDto extends DistroXTestDtoBase<DistroXTestDto> implement
         return getResponse().getCrn();
     }
 
-    public void setRemovableInstanceId(List<String> removableInstanceIds) {
+    public void setRemovableInstanceIds(List<String> removableInstanceIds) {
         this.removableInstanceIds = removableInstanceIds;
     }
 

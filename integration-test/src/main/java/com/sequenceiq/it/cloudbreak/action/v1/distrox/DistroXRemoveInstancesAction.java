@@ -26,7 +26,7 @@ public class DistroXRemoveInstancesAction implements Action<DistroXTestDto, Clou
         if (!removableInstanceIds.isEmpty()) {
             MultipleInstanceDeleteRequest instanceDeleteRequest = new MultipleInstanceDeleteRequest();
             instanceDeleteRequest.setInstances(removableInstanceIds);
-            Log.when(LOGGER, String.format("Removing instances [%s] from Distrox...", instanceDeleteRequest.getInstances()));
+            Log.when(LOGGER, String.format(" Removing instances [%s] from distrox '%s'... ", instanceDeleteRequest.getInstances(), testDto.getName()));
             client.getDefaultClient()
                     .distroXV1Endpoint()
                     .deleteInstancesByCrn(testDto.getCrn(), removableInstanceIds, instanceDeleteRequest, false);
@@ -35,10 +35,11 @@ public class DistroXRemoveInstancesAction implements Action<DistroXTestDto, Clou
                     .getByName(testDto.getName(), new HashSet<>(Arrays.asList("hardware_info", "events")));
             testDto.setResponse(stackV4Response);
             Log.whenJson(LOGGER, " Distrox remove instances response: ", stackV4Response);
-            LOGGER.info("Hardware info for stack after remove instances: {}", stackV4Response.getHardwareInfoGroups());
+            LOGGER.info(String.format("Hardware info for distrox '%s' after remove instances [%s].", testDto.getName(),
+                    stackV4Response.getHardwareInfoGroups()));
             return testDto;
         } else {
-            throw new TestFailException("There is no instance id set for removal");
+            throw new TestFailException(String.format("Cannot find any instance to remove from distrox '%s'!", testDto.getName()));
         }
     }
 }

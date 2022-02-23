@@ -15,6 +15,7 @@ import com.sequenceiq.it.cloudbreak.context.Description;
 import com.sequenceiq.it.cloudbreak.context.TestContext;
 import com.sequenceiq.it.cloudbreak.dto.distrox.DistroXTestDto;
 import com.sequenceiq.it.cloudbreak.testcase.e2e.AbstractE2ETest;
+import com.sequenceiq.it.cloudbreak.util.CloudFunctionality;
 import com.sequenceiq.it.cloudbreak.util.DistroxUtil;
 
 public class DistroXScaleEdgeCasesTest extends AbstractE2ETest {
@@ -44,13 +45,14 @@ public class DistroXScaleEdgeCasesTest extends AbstractE2ETest {
                 .when(distroXTestClient.create())
                 .await(STACK_AVAILABLE)
                 .then((tc, testDto, client) -> {
+                    CloudFunctionality cloudFunctionality = tc.getCloudProvider().getCloudFunctionality();
                     List<String> instancesToDelete = distroxUtil.getInstanceIds(testDto, client, WORKER.getName()).stream()
                             .limit(1).collect(Collectors.toList());
-                    testContext.getCloudProvider().getCloudFunctionality().deleteInstances(testDto.getName(), instancesToDelete);
-                    testDto.setRemovableInstanceId(List.of(instancesToDelete.iterator().next()));
+                    cloudFunctionality.deleteInstances(testDto.getName(), instancesToDelete);
+                    testDto.setRemovableInstanceIds(List.of(instancesToDelete.iterator().next()));
                     return testDto;
                 })
-                .awaitForInstancesByState(DELETED_ON_PROVIDER_SIDE)
+                .awaitForRemovableInstancesByState(DELETED_ON_PROVIDER_SIDE)
                 .when(distroXTestClient.removeInstances())
                 .await(STACK_AVAILABLE)
                 .validate();

@@ -11,6 +11,7 @@ import org.testng.ITestContext;
 import org.testng.annotations.Test;
 
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.base.InstanceStatus;
+import com.sequenceiq.it.cloudbreak.assertion.distrox.DistroxStopStartScaleDurationAssertions;
 import com.sequenceiq.it.cloudbreak.client.DistroXTestClient;
 import com.sequenceiq.it.cloudbreak.context.Description;
 import com.sequenceiq.it.cloudbreak.context.TestContext;
@@ -49,7 +50,7 @@ public class DistroXStopStartScaleTest extends AbstractE2ETest {
             given = "there is a running default Distrox cluster",
             when = "cluster has been scaled successfully by 4 compute nodes",
             then = "cluster compute nodes can be scaled down then up via stop then start instances at provider")
-    public void testCreateAndScaleDistroX(TestContext testContext, ITestContext iTestContext) {
+    public void testStopStartScaleDistroX(TestContext testContext, ITestContext iTestContext) {
         AtomicReference<List<String>> instancesToStop = new AtomicReference<>();
         DistroXScaleTestParameters params = new DistroXScaleTestParameters(iTestContext.getCurrentXmlTest().getAllParameters());
 
@@ -63,27 +64,31 @@ public class DistroXStopStartScaleTest extends AbstractE2ETest {
                 .then((tc, testDto, client) -> {
                     instancesToStop.set(distroxUtil.getInstanceIds(testDto, client, params.getHostGroup()).stream()
                             .limit(params.getScaleDownTarget()).collect(Collectors.toList()));
-                    testDto.setRemovableInstanceId(instancesToStop.get());
+                    testDto.setRemovableInstanceIds(instancesToStop.get());
                     return testDto;
                 })
                 .when(distroXTestClient.scaleStopInstances())
                 .await(STACK_AVAILABLE)
-                .awaitForInstancesByState(InstanceStatus.STOPPED)
+                .awaitForRemovableInstancesByState(InstanceStatus.STOPPED)
+                .then(new DistroxStopStartScaleDurationAssertions(5, false))
                 .when(distroXTestClient.scaleStartInstances(params.getHostGroup(), params.getScaleUpTarget()))
                 .await(STACK_AVAILABLE)
                 .awaitForHealthyInstances()
-                .when(distroXTestClient.get());
+                .when(distroXTestClient.get())
+                .then(new DistroxStopStartScaleDurationAssertions(5, true));
         IntStream.range(1, params.getTimes())
                 .forEach(i -> {
                             testContext
                                     .given(DistroXTestDto.class)
                                     .when(distroXTestClient.scaleStopInstances())
                                     .await(STACK_AVAILABLE)
-                                    .awaitForInstancesByState(InstanceStatus.STOPPED)
+                                    .awaitForRemovableInstancesByState(InstanceStatus.STOPPED)
+                                    .then(new DistroxStopStartScaleDurationAssertions(5, false))
                                     .when(distroXTestClient.scaleStartInstances(params.getHostGroup(), params.getScaleUpTarget()))
                                     .await(STACK_AVAILABLE)
                                     .awaitForHealthyInstances()
-                                    .when(distroXTestClient.get());
+                                    .when(distroXTestClient.get())
+                                    .then(new DistroxStopStartScaleDurationAssertions(5, true));
                         }
                 );
         testContext.given(DistroXTestDto.class).validate();
