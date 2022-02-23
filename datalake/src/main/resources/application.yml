@@ -113,6 +113,9 @@ datalake:
     default: "7.2.14"
     advertised: "7.1.0,7.2.0,7.2.1,7.2.2,7.2.6,7.2.7,7.2.8,7.2.9,7.2.10,7.2.11,7.2.12,7.2.14,7.2.15"
     supported: "7.1.0,7.2.0,7.2.1,7.2.2,7.2.6,7.2.7,7.2.8,7.2.9,7.2.10,7.2.11,7.2.12,7.2.14,7.2.15"
+  intermediate.threadpool:
+    core.size: 100
+    capacity.size: 4000
 
 secret:
   application: sdx/shared
@@ -144,6 +147,44 @@ cb:
       connect.timeout.seconds: 125
       read.timeout.seconds: 125
       write.timeout.seconds: 125
+  aws:
+    spotinstances.enabled: true
+    disabled.instance.types: c5d,f1,i3,m5d,p3dn,r5d,z1d
+    hostkey.verify: false
+    external.id: provision-ambari
+    role.session.name: cdp-provisioning
+    cf.template.new.path: templates/aws-cf-stack.ftl
+    cf.network.template.path: templates/aws-cf-network.ftl
+    cf.template.newdb.path: templates/aws-cf-dbstack.ftl
+    default.inbound.security.group:
+    vpc:
+    vpcendpoints:
+      enabled.gateway.services:
+      gateway:
+        services: s3,dynamodb
+      interface:
+        services: autoscaling,cloudformation,ec2,ecr.api,ecr.dkr,elasticfilesystem,elasticloadbalancing,sts,rds
+    credential.cache.ttl: 60
+  gcp:
+    hostkey.verify: false
+    disk.encryption.url: https://cloud-certs.storage.googleapis.com/google-cloud-csek-ingress.pem
+    stopStart.batch.size: 10
+    create.batch.size: 5
+  azure:
+    host.name.prefix.length: 255
+    database.template.batchSize: 1
+  max:
+    azure.resource.name.length: 120
+    gcp.resource.name.length: 63
+    aws.resource.name.length: 50
+    aws.loadbalancer.resource.name.length: 32
+    yarn.resource.name.length: 63
+  yarn:
+    defaultQueue: "default"
+    defaultLifeTime: 604800
+  platform.default:
+    variants: AWS:AWS
+    regions: AWS:eu-west-1,AZURE:North Europe,GCP:europe-west1,YARN:default,MOCK:USA
 
 notification:
   urls: http://localhost:3000/notifications

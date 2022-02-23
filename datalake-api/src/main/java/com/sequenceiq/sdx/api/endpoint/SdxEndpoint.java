@@ -42,6 +42,7 @@ import com.sequenceiq.sdx.api.model.SdxClusterResponse;
 import com.sequenceiq.sdx.api.model.SdxClusterShape;
 import com.sequenceiq.sdx.api.model.SdxCustomClusterRequest;
 import com.sequenceiq.sdx.api.model.SdxGenerateImageCatalogResponse;
+import com.sequenceiq.sdx.api.model.SdxRecommendationResponse;
 import com.sequenceiq.sdx.api.model.SdxRepairRequest;
 import com.sequenceiq.sdx.api.model.SdxSyncComponentVersionsFromCmResponse;
 import com.sequenceiq.sdx.api.model.SdxValidateCloudStorageRequest;
@@ -289,4 +290,17 @@ public interface SdxEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = GENERATE_IMAGE_CATALOG, nickname = "generateImageCatalog")
     SdxGenerateImageCatalogResponse generateImageCatalog(@PathParam("name") String name);
+
+    @GET
+    @Path("recommendation")
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Creates a recommendation that advises cloud resources for the given datalake shape based on the given credential crn.",
+            nickname = "getRecommendationByCredCrn")
+    SdxRecommendationResponse getRecommendationByCredCrn(
+            @QueryParam("credentialCrn") String credentialCrn,
+            @QueryParam("region") String region,
+            @QueryParam("platformVariant") String platformVariant,
+            @QueryParam("availabilityZone") String availabilityZone,
+            @QueryParam("runtime") String runtime,
+            @QueryParam("clusterShape") SdxClusterShape clusterShape);
 }
