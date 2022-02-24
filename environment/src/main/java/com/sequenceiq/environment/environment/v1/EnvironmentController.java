@@ -394,7 +394,7 @@ public class EnvironmentController implements EnvironmentEndpoint {
     public CredentialResponse verifyCredentialByEnvCrn(@ValidCrn(resource = CrnResourceDescriptor.ENVIRONMENT) @ResourceCrn String crn) {
         String accountId = ThreadBasedUserCrnProvider.getAccountId();
         Credential credential = credentialService.getByEnvironmentCrnAndAccountId(crn, accountId, ENVIRONMENT);
-        Credential verifiedCredential = credentialService.verify(credential);
+        Credential verifiedCredential = credentialService.verify(credential, ENVIRONMENT);
         return credentialConverter.convert(verifiedCredential);
     }
 

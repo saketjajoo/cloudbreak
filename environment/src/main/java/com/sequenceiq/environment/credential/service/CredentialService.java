@@ -168,8 +168,8 @@ public class CredentialService extends AbstractCredentialService implements Reso
         return credentialAdapter.interactiveLogin(credential, accountId);
     }
 
-    public Credential verify(Credential credential) {
-        CredentialVerification verification = credentialAdapter.verify(credential, credential.getAccountId());
+    public Credential verify(Credential credential, CredentialType type) {
+        CredentialVerification verification = credentialAdapter.verify(credential, credential.getAccountId(), type);
         if (verification.isChanged()) {
             return repository.save(verification.getCredential());
         }
@@ -182,7 +182,7 @@ public class CredentialService extends AbstractCredentialService implements Reso
         credential.setAccountId(accountId);
         credential.setResourceCrn(original.getResourceCrn());
         credential.setCreator(original.getCreator());
-        Credential updated = repository.save(credentialAdapter.verify(credential, accountId).getCredential());
+        Credential updated = repository.save(credentialAdapter.verify(credential, accountId, type).getCredential());
         secretService.delete(original.getAttributesSecret());
         sendCredentialNotification(credential, ResourceEvent.CREDENTIAL_MODIFIED);
         return updated;
@@ -218,7 +218,7 @@ public class CredentialService extends AbstractCredentialService implements Reso
         credential.setResourceCrn(credentialCrn);
         credential.setCreator(creatorUserCrn);
         credential.setAccountId(accountId);
-        Credential verifiedCredential = credentialAdapter.verify(credential, accountId, Boolean.TRUE).getCredential();
+        Credential verifiedCredential = credentialAdapter.verify(credential, accountId, Boolean.TRUE, type).getCredential();
         if (verifiedCredential.getVerificationStatusText() != null) {
             throw new BadRequestException(verifiedCredential.getVerificationStatusText());
         }
@@ -279,7 +279,7 @@ public class CredentialService extends AbstractCredentialService implements Reso
         LOGGER.info("Authorizing credential('{}') with Authorization Code Grant flow.", original.getName());
         String attributesSecret = original.getAttributesSecret();
         updateAuthorizationCodeOfAzureCredential(original, code);
-        Credential updated = repository.save(credentialAdapter.verify(original, accountId).getCredential());
+        Credential updated = repository.save(credentialAdapter.verify(original, accountId, ENVIRONMENT).getCredential());
         secretService.delete(attributesSecret);
         return updated;
     }

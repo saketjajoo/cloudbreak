@@ -1,5 +1,6 @@
 package com.sequenceiq.environment.credential.service;
 
+import static com.sequenceiq.common.model.CredentialType.ENVIRONMENT;
 import static com.sequenceiq.environment.TempConstants.TEMP_USER_ID;
 
 import java.util.Collections;
@@ -36,6 +37,7 @@ import com.sequenceiq.cloudbreak.cloud.model.CredentialStatus;
 import com.sequenceiq.cloudbreak.cloud.model.ExtendedCloudCredential;
 import com.sequenceiq.cloudbreak.common.json.Json;
 import com.sequenceiq.cloudbreak.service.OperationException;
+import com.sequenceiq.common.model.CredentialType;
 import com.sequenceiq.environment.credential.domain.Credential;
 import com.sequenceiq.environment.credential.exception.CredentialVerificationException;
 import com.sequenceiq.environment.credential.v1.converter.CredentialToCloudCredentialConverter;
@@ -79,13 +81,13 @@ public class ServiceProviderCredentialAdapter {
     @Inject
     private RequestProvider requestProvider;
 
-    public CredentialVerification verify(Credential credential, String accountId) {
-        return verify(credential, accountId, Boolean.FALSE);
+    public CredentialVerification verify(Credential credential, String accountId, CredentialType type) {
+        return verify(credential, accountId, Boolean.FALSE, type);
     }
 
-    public CredentialVerification verify(Credential credential, String accountId, boolean creationVerification) {
+    public CredentialVerification verify(Credential credential, String accountId, boolean creationVerification, CredentialType type) {
         boolean changed = false;
-        credential = credentialPrerequisiteService.decorateCredential(credential);
+        credential = credentialPrerequisiteService.decorateCredential(credential, type);
         CloudContext cloudContext = CloudContext.Builder.builder()
                 .withId(credential.getId())
                 .withName(credential.getName())
@@ -127,7 +129,7 @@ public class ServiceProviderCredentialAdapter {
     public CDPServicePolicyVerification verifyByServices(Credential credential, String accountId,
         List<String> services,
         Map<String, String> experiencePrerequisites) {
-        credential = credentialPrerequisiteService.decorateCredential(credential);
+        credential = credentialPrerequisiteService.decorateCredential(credential, ENVIRONMENT);
         CloudContext cloudContext = CloudContext.Builder.builder()
                 .withId(credential.getId())
                 .withName(credential.getName())

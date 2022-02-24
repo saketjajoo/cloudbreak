@@ -8,14 +8,17 @@ public class CredentialPrerequisitesRequest extends CloudPlatformRequest<Credent
 
     private final String externalId;
 
+    private final String auditExternalId;
+
     private final String deploymentAddress;
 
     private final CredentialType type;
 
-    public CredentialPrerequisitesRequest(CloudContext cloudContext, String externalId, String deploymentAddress,
+    public CredentialPrerequisitesRequest(CloudContext cloudContext, String externalId, String auditExternalId, String deploymentAddress,
         CredentialType type) {
         super(cloudContext, null);
         this.externalId = externalId;
+        this.auditExternalId = auditExternalId;
         this.deploymentAddress = deploymentAddress;
         this.type = type;
     }
@@ -30,5 +33,9 @@ public class CredentialPrerequisitesRequest extends CloudPlatformRequest<Credent
 
     public CredentialType getType() {
         return type;
+    }
+
+    public String getAuditExternalId() {
+        return auditExternalId;
     }
 }

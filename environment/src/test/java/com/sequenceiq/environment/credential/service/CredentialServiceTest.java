@@ -337,7 +337,7 @@ class CredentialServiceTest {
 
         when(repository.findByNameAndAccountId(eq(CREDENTIAL_NAME), eq(ACCOUNT_ID), anyCollection(), any()))
                 .thenReturn(Optional.of(result));
-        when(credentialAdapter.verify(any(), anyString())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
+        when(credentialAdapter.verify(any(), anyString(), any())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(credentialValidator.validateCredentialUpdate(any(Credential.class), any(Credential.class), any(CredentialType.class)))
                 .thenReturn(ValidationResult.builder().build());
@@ -360,7 +360,7 @@ class CredentialServiceTest {
 
         when(repository.findByNameAndAccountId(eq(CREDENTIAL_NAME), eq(ACCOUNT_ID), anyCollection(), any()))
                 .thenReturn(Optional.of(result));
-        when(credentialAdapter.verify(any(), anyString())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
+        when(credentialAdapter.verify(any(), anyString(), any())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(credentialValidator.validateCredentialUpdate(any(Credential.class), any(Credential.class), any(CredentialType.class)))
                 .thenReturn(ValidationResult.builder().build());
@@ -389,15 +389,15 @@ class CredentialServiceTest {
 
     @Test
     void testVerifyNothingChanged() {
-        when(credentialAdapter.verify(any(), any())).thenReturn(new CredentialVerification(CREDENTIAL, false));
-        credentialServiceUnderTest.verify(CREDENTIAL);
+        when(credentialAdapter.verify(any(), any(), any())).thenReturn(new CredentialVerification(CREDENTIAL, false));
+        credentialServiceUnderTest.verify(CREDENTIAL, ENVIRONMENT);
         verify(repository, never()).save(any());
     }
 
     @Test
     void testVerifyChanged() {
-        when(credentialAdapter.verify(any(), any())).thenReturn(new CredentialVerification(CREDENTIAL, true));
-        credentialServiceUnderTest.verify(CREDENTIAL);
+        when(credentialAdapter.verify(any(), any(), any())).thenReturn(new CredentialVerification(CREDENTIAL, true));
+        credentialServiceUnderTest.verify(CREDENTIAL, ENVIRONMENT);
         verify(repository).save(any());
     }
 
@@ -405,7 +405,7 @@ class CredentialServiceTest {
     void testCreateAndEnvironmentCredential() {
         when(repository.findByNameAndAccountId(eq(CREDENTIAL_NAME), eq(ACCOUNT_ID), anyCollection(), any()))
                 .thenReturn(Optional.empty());
-        when(credentialAdapter.verify(any(), anyString(), anyBoolean())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
+        when(credentialAdapter.verify(any(), anyString(), anyBoolean(), any())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
         credentialServiceUnderTest.create(CREDENTIAL, ACCOUNT_ID, USER_ID, ENVIRONMENT);
         verify(credentialValidator).validateCredentialCloudPlatform(eq(PLATFORM), eq(USER_ID), any(CredentialType.class));
@@ -417,7 +417,7 @@ class CredentialServiceTest {
     void testCreateAndAuditCredential() {
         when(repository.findByNameAndAccountId(eq(CREDENTIAL_NAME), eq(ACCOUNT_ID), anyCollection(), any()))
                 .thenReturn(Optional.empty());
-        when(credentialAdapter.verify(any(), anyString(), anyBoolean())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
+        when(credentialAdapter.verify(any(), anyString(), anyBoolean(), any())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
         credentialServiceUnderTest.create(CREDENTIAL, ACCOUNT_ID, USER_ID, AUDIT);
         verify(credentialValidator).validateCredentialCloudPlatform(eq(PLATFORM), eq(USER_ID), any(CredentialType.class));
@@ -549,7 +549,7 @@ class CredentialServiceTest {
     void testAuthorizeCodeGrantFlowFoundStateMatches() throws IOException {
         when(repository.save(any())).thenReturn(CREDENTIAL);
         when(repository.findAllByAccountId(eq(ACCOUNT_ID), anyCollection(), any())).thenReturn(Set.of(CREDENTIAL));
-        when(credentialAdapter.verify(any(), anyString())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
+        when(credentialAdapter.verify(any(), anyString(), any())).thenAnswer(i -> new CredentialVerification(i.getArgument(0), true));
 
         Credential result =
                 credentialServiceUnderTest.authorizeCodeGrantFlow(DIFFERENT_CODE, STATE, ACCOUNT_ID, "platform");

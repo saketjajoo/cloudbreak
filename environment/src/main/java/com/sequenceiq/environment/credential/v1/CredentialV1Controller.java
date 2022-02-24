@@ -204,7 +204,7 @@ public class CredentialV1Controller extends NotificationController implements Cr
     public CredentialResponse verifyByName(@ResourceName String name) {
         String accountId = ThreadBasedUserCrnProvider.getAccountId();
         Credential credential = credentialService.getByNameForAccountId(name, accountId, ENVIRONMENT);
-        Credential verifiedCredential = credentialService.verify(credential);
+        Credential verifiedCredential = credentialService.verify(credential, ENVIRONMENT);
         return credentialConverter.convert(verifiedCredential);
     }
 
@@ -213,7 +213,7 @@ public class CredentialV1Controller extends NotificationController implements Cr
     public CredentialResponse verifyByCrn(@TenantAwareParam @ResourceCrn String crn) {
         String accountId = ThreadBasedUserCrnProvider.getAccountId();
         Credential credential = credentialService.getByCrnForAccountId(crn, accountId, ENVIRONMENT);
-        Credential verifiedCredential = credentialService.verify(credential);
+        Credential verifiedCredential = credentialService.verify(credential, ENVIRONMENT);
         return credentialConverter.convert(verifiedCredential);
     }
 

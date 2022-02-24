@@ -85,8 +85,12 @@ public class CredentialPrerequisiteService {
                 .withPlatform(cloudPlatform)
                 .withWorkspaceId(TEMP_WORKSPACE_ID)
                 .build();
-        CredentialPrerequisitesRequest request = new CredentialPrerequisitesRequest(cloudContext,
-                userPreferencesService.getExternalIdForCurrentUser(), deploymentAddress, type);
+        CredentialPrerequisitesRequest request = new CredentialPrerequisitesRequest(
+                cloudContext,
+                userPreferencesService.getExternalIdForCurrentUser(),
+                userPreferencesService.getAuditExternalIdForCurrentUser(),
+                deploymentAddress,
+                type);
         LOGGER.debug("Triggering event: {}", request);
         eventBus.notify(request.selector(), eventFactory.createEvent(request));
         String message = String.format("Failed to get prerequisites for platform '%s': ", cloudPlatform);
@@ -127,15 +131,24 @@ public class CredentialPrerequisiteService {
         }
     }
 
-    public Credential decorateCredential(Credential credential) {
+    public Credential decorateCredential(Credential credential, CredentialType type) {
         CredentialAttributes credentialAttributes = getCredentialAttributes(credential);
         if (isRoleArnSet(credentialAttributes)) {
             if (credentialAttributes.getAws().getRoleBased().getExternalId() == null) {
-                credentialAttributes.getAws().getRoleBased().setExternalId(userPreferencesService.getExternalIdForCurrentUser());
+                credentialAttributes.getAws().getRoleBased().setExternalId(getExternalId(type));
                 saveNewAttributesToCredential(credential, credentialAttributes);
             }
         }
         return credential;
+    }
+
+    private String getExternalId(CredentialType type) {
+        if (CredentialType.AUDIT.equals(type)) {
+            return userPreferencesService.getExternalIdForCurrentUser();
+        } else if (CredentialType.ENVIRONMENT.equals(type)) {
+            return userPreferencesService.getAuditExternalIdForCurrentUser();
+        }
+        return null;
     }
 
     private void fillPoliciesWithDefaultIfMissing(String defaultAsteriskPolicyJson, Map<String, String> policies) {

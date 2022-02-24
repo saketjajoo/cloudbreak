@@ -83,7 +83,7 @@ public class AzureCredentialConnectorTest {
         when(appCreationCommand.generateEnvironmentCredentialCommand(anyString())).thenReturn(expectedCommand);
         when(azurePlatformParameters.getRoleDefJson()).thenReturn(expectedRoleDef);
 
-        CredentialPrerequisitesResponse result = underTest.getPrerequisites(TEST_CLOUD_CONTEXT, "2", DEPLOYMENT_ADDRESS,
+        CredentialPrerequisitesResponse result = underTest.getPrerequisites(TEST_CLOUD_CONTEXT, "2", "3", DEPLOYMENT_ADDRESS,
                 CredentialType.ENVIRONMENT);
 
         assertEquals(PLATFORM, result.getCloudPlatform());
@@ -96,7 +96,7 @@ public class AzureCredentialConnectorTest {
         String expected = "someAppCreationCommandValue";
         when(appCreationCommand.generateEnvironmentCredentialCommand(anyString())).thenReturn(expected);
 
-        CredentialPrerequisitesResponse result = underTest.getPrerequisites(TEST_CLOUD_CONTEXT, "2", DEPLOYMENT_ADDRESS,
+        CredentialPrerequisitesResponse result = underTest.getPrerequisites(TEST_CLOUD_CONTEXT, "2", "3", DEPLOYMENT_ADDRESS,
                 CredentialType.ENVIRONMENT);
 
         assertNull(result.getAws());

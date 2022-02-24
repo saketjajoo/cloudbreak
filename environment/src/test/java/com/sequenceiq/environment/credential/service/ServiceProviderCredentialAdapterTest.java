@@ -1,5 +1,6 @@
 package com.sequenceiq.environment.credential.service;
 
+import static com.sequenceiq.common.model.CredentialType.ENVIRONMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -104,7 +105,7 @@ class ServiceProviderCredentialAdapterTest {
         when(credentialVerificationResult.getStatus()).thenReturn(EventStatus.OK);
         when(credentialVerificationResult.getCloudCredentialStatus()).thenReturn(cloudCredentialStatus);
         when(credentialVerificationRequest.await()).thenReturn(credentialVerificationResult);
-        when(credentialPrerequisiteService.decorateCredential(any())).thenAnswer(i -> i.getArgument(0));
+        when(credentialPrerequisiteService.decorateCredential(any(), any())).thenAnswer(i -> i.getArgument(0));
         when(credentialConverter.convert(credential)).thenReturn(convertedCredential);
         when(requestProvider.getInitCodeGrantFlowRequest(any(CloudContext.class), eq(convertedCredential))).thenReturn(initCodeGrantFlowRequest);
         when(requestProvider.getCredentialVerificationRequest(any(CloudContext.class), eq(convertedCredential), anyBoolean()))
@@ -115,7 +116,7 @@ class ServiceProviderCredentialAdapterTest {
     void testCredentialVerificationCredentialNotChanged() {
         when(cloudCredentialStatus.getCloudCredential()).thenReturn(convertedCredential);
         when(cloudCredentialStatus.getStatus()).thenReturn(CredentialStatus.VERIFIED);
-        CredentialVerification verification = underTest.verify(credential, ACCOUNT_ID);
+        CredentialVerification verification = underTest.verify(credential, ACCOUNT_ID, ENVIRONMENT);
         assertFalse(verification.isChanged());
     }
 
@@ -124,7 +125,7 @@ class ServiceProviderCredentialAdapterTest {
         when(cloudCredentialStatus.getCloudCredential()).thenReturn(convertedCredential);
         when(cloudCredentialStatus.getStatus()).thenReturn(CredentialStatus.PERMISSIONS_MISSING);
         when(cloudCredentialStatus.getStatusReason()).thenReturn(CredentialStatus.PERMISSIONS_MISSING.name());
-        CredentialVerification verification = underTest.verify(credential, ACCOUNT_ID);
+        CredentialVerification verification = underTest.verify(credential, ACCOUNT_ID, ENVIRONMENT);
         assertTrue(verification.isChanged());
     }
 
