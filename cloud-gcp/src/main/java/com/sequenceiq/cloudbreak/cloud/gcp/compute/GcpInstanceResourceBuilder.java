@@ -384,6 +384,43 @@ public class GcpInstanceResourceBuilder extends AbstractGcpComputeBuilder {
                 }
             }
         }
+
+
+        for (CloudInstance instance : instances) {
+            String operationName = instance.getStringParameter(OPERATION_ID);
+            String availabilityZone = instance.getAvailabilityZone();
+            String instanceId = instance.getInstanceId();
+            LOGGER.debug("Query operations of instance('{}'), with operation id:'{}' in availability zone:'{}'", instanceId, operationName, availabilityZone);
+            try {
+                Operation operation = gcpStackUtil.zoneOperations(context.getCompute(), context.getProjectId(), operationName, availabilityZone).execute();
+                String operationStatus = operation.getStatus();
+                InstanceStatus status;
+                if (GcpOperationStatus.DONE.equals(GcpOperationStatus.valueOf(operationStatus))) {
+                    String operationType = operation.getOperationType();
+                    switch (operationType) {
+                        case "start":
+                            status = InstanceStatus.STARTED;
+                            break;
+                        case "stop":
+                            status = InstanceStatus.STOPPED;
+                            break;
+                        case "delete":
+                            status = InstanceStatus.TERMINATED;
+                            break;
+                        default:
+                            status = InstanceStatus.IN_PROGRESS;
+                    }
+                } else {
+                    status = InstanceStatus.IN_PROGRESS;
+                }
+                LOGGER.info("The status of the instance('{}') based on the related operation('{}') is: {}", instanceId, operationName, status.name());
+                result.add(new CloudVmInstanceStatus(instance, status));
+            } catch (GoogleJsonResponseException googleJsonResponseException) {
+                //TODO handle not existence of operation for any reason
+            } catch (IOException e) {
+                //TODO handle other errors
+            }
+        }
         return result;
     }
 
@@ -542,4 +579,9 @@ public class GcpInstanceResourceBuilder extends AbstractGcpComputeBuilder {
         };
     }
 
+    private enum GcpOperationStatus {
+        PENDING,
+        RUNNING,
+        DONE
+    }
 }
