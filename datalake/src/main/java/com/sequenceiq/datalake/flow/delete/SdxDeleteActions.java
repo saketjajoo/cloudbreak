@@ -4,6 +4,7 @@ import static com.sequenceiq.datalake.flow.delete.SdxDeleteEvent.SDX_DELETE_FAIL
 import static com.sequenceiq.datalake.flow.delete.SdxDeleteEvent.SDX_DELETE_FINALIZED_EVENT;
 import static com.sequenceiq.datalake.flow.delete.SdxDeleteEvent.SDX_STACK_DELETION_IN_PROGRESS_EVENT;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -189,6 +190,13 @@ public class SdxDeleteActions {
                             payload.getResourceId());
                     metricService.incrementMetricCounter(MetricType.SDX_DELETION_FAILED, sdxCluster);
                     eventSenderService.notifyEvent(context, ResourceEvent.SDX_CLUSTER_DELETION_FAILED);
+
+                    if (sdxCluster.isDetached()) {
+                        eventSenderService.sendEventAndNotification(
+                                sdxCluster, context.getFlowTriggerUserCrn(), ResourceEvent.SDX_DETACHED_CLUSTER_DELETION_FAILED,
+                                List.of(sdxCluster.getClusterName())
+                        );
+                    }
                 } catch (NotFoundException notFoundException) {
                     LOGGER.info("Can not set status to SDX_DELETION_FAILED because data lake was not found");
                 }

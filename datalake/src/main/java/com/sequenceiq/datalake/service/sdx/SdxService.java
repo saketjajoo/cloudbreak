@@ -1056,7 +1056,7 @@ public class SdxService implements ResourceIdProvider, ResourcePropertyProvider,
     public FlowIdentifier deleteSdx(String userCrn, String name, boolean forced) {
         LOGGER.info("Deleting SDX {}", name);
         String accountIdFromCrn = getAccountIdFromCrn(userCrn);
-        return sdxClusterRepository.findByAccountIdAndClusterNameAndDeletedIsNullAndDetachedIsFalse(accountIdFromCrn, name)
+        return sdxClusterRepository.findByAccountIdAndClusterNameAndDeletedIsNull(accountIdFromCrn, name)
                 .map(sdxCluster -> deleteSdxCluster(sdxCluster, forced))
                 .orElseThrow(() -> notFound("SDX cluster", name).get());
     }
