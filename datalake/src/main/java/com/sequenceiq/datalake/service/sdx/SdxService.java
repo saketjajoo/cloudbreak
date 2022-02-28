@@ -105,6 +105,7 @@ import com.sequenceiq.datalake.entity.SdxStatusEntity;
 import com.sequenceiq.datalake.flow.SdxReactorFlowManager;
 import com.sequenceiq.datalake.repository.SdxClusterRepository;
 import com.sequenceiq.datalake.service.EnvironmentClientService;
+import com.sequenceiq.datalake.service.SdxCustomInstanceTypeService;
 import com.sequenceiq.datalake.service.imagecatalog.ImageCatalogService;
 import com.sequenceiq.datalake.service.sdx.status.SdxStatusService;
 import com.sequenceiq.environment.api.v1.environment.model.response.DetailedEnvironmentResponse;
@@ -192,6 +193,9 @@ public class SdxService implements ResourceIdProvider, ResourcePropertyProvider,
 
     @Inject
     private ImageCatalogService imageCatalogService;
+
+    @Inject
+    private SdxCustomInstanceTypeService sdxCustomInstanceTypeService;
 
     @Value("${info.app.version}")
     private String sdxClusterServiceVersion;
@@ -402,6 +406,7 @@ public class SdxService implements ResourceIdProvider, ResourcePropertyProvider,
         updateStackV4RequestWithEnvironmentCrnIfNotExistsOnIt(internalStackV4Request, environment.getCrn());
         StackV4Request stackRequest = getStackRequest(sdxClusterRequest.getClusterShape(), sdxClusterRequest.isEnableRangerRaz(),
                 internalStackV4Request, cloudPlatform, runtimeVersion, imageSettingsV4Request);
+        sdxCustomInstanceTypeService.modifyInstanceTypesIfNeeded(stackRequest, sdxClusterRequest.getCustomInstanceTypes());
         validateRecipes(sdxClusterRequest, stackRequest, userCrn);
         prepareCloudStorageForStack(sdxClusterRequest, stackRequest, sdxCluster, environment);
         prepareDefaultSecurityConfigs(internalStackV4Request, stackRequest, cloudPlatform);
