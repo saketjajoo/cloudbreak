@@ -846,6 +846,8 @@ existing-stack-patcher:
   intervalInHours: 24
   maxInitialStartDelayInHours: 12
   patch-configs:
+    mock:
+      enabled: true
     unbound-restart:
       enabled: false
     logging-agent-auto-restart:

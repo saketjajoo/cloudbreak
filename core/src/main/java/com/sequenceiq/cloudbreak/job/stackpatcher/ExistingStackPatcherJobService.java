@@ -22,7 +22,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.sequenceiq.cloudbreak.domain.stack.StackPatchType;
 import com.sequenceiq.cloudbreak.job.stackpatcher.config.ExistingStackPatcherConfig;
+import com.sequenceiq.cloudbreak.quartz.model.JobResource;
+import com.sequenceiq.cloudbreak.service.stack.StackService;
 
 @Service
 public class ExistingStackPatcherJobService {
@@ -41,10 +44,18 @@ public class ExistingStackPatcherJobService {
     @Inject
     private Scheduler scheduler;
 
+    @Inject
+    private StackService stackService;
+
+    public void schedule(Long stackId, StackPatchType stackPatchType) {
+        JobResource jobResource = stackService.getJobResource(stackId);
+        schedule(new ExistingStackPatcherJobAdapter(jobResource, stackPatchType));
+    }
+
     public void schedule(ExistingStackPatcherJobAdapter resource) {
         JobDetail jobDetail = buildJobDetail(resource);
         JobKey jobKey = jobDetail.getKey();
-        Trigger trigger = buildJobTrigger(jobDetail);
+        Trigger trigger = buildJobTrigger(jobDetail, resource.getStackPatchType());
         try {
             if (scheduler.getJobDetail(jobKey) != null) {
                 LOGGER.info("Unscheduling stack patcher job for stack with key: '{}' and group: '{}'", jobKey.getName(), jobKey.getGroup());
@@ -80,21 +91,37 @@ public class ExistingStackPatcherJobService {
                 .build();
     }
 
-    private Trigger buildJobTrigger(JobDetail jobDetail) {
+    private Trigger buildJobTrigger(JobDetail jobDetail, StackPatchType stackPatchType) {
         return TriggerBuilder.newTrigger()
                 .forJob(jobDetail)
                 .withIdentity(jobDetail.getKey().getName(), TRIGGER_GROUP)
-                .withDescription("Trigger for patching existing stack")
-                .startAt(delayedFirstStart())
+                .withDescription("Trigger for existing stack patch " + stackPatchType.name())
                 .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                        .withIntervalInHours(properties.getIntervalInHours())
+                        .withIntervalInMinutes(getIntervalInMinutes(stackPatchType))
                         .repeatForever()
                         .withMisfireHandlingInstructionNextWithExistingCount())
+                .startAt(getFirstStart(stackPatchType))
                 .build();
     }
 
-    private Date delayedFirstStart() {
-        int delayInMinutes = RANDOM.nextInt((int) TimeUnit.HOURS.toMinutes(properties.getMaxInitialStartDelayInHours()));
-        return Date.from(ZonedDateTime.now().toInstant().plus(Duration.ofMinutes(delayInMinutes)));
+    private int getIntervalInMinutes(StackPatchType stackPatchType) {
+        int intervalInMinutes;
+        if (!StackPatchType.MOCK.equals(stackPatchType)) {
+            intervalInMinutes = (int) TimeUnit.HOURS.toMinutes(properties.getIntervalInHours());
+        } else {
+            intervalInMinutes = 1;
+        }
+        return intervalInMinutes;
+    }
+
+    private Date getFirstStart(StackPatchType stackPatchType) {
+        Date firstStart;
+        if (!StackPatchType.MOCK.equals(stackPatchType)) {
+            int delayInMinutes = RANDOM.nextInt((int) TimeUnit.HOURS.toMinutes(properties.getMaxInitialStartDelayInHours()));
+            firstStart = Date.from(ZonedDateTime.now().toInstant().plus(Duration.ofMinutes(delayInMinutes)));
+        } else {
+            firstStart = new Date();
+        }
+        return firstStart;
     }
 }
