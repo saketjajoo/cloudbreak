@@ -54,6 +54,8 @@ public class SdxClusterResponse {
 
     private String databaseEngineVersion;
 
+    private Map<String, String> customInstanceTypes;
+
     public String getCrn() {
         return crn;
     }
@@ -222,6 +224,14 @@ public class SdxClusterResponse {
         return databaseEngineVersion;
     }
 
+    public Map<String, String> getCustomInstanceTypes() {
+        return customInstanceTypes;
+    }
+
+    public void setCustomInstanceTypes(Map<String, String> customInstanceTypes) {
+        this.customInstanceTypes = customInstanceTypes;
+    }
+
     @Override
     public String toString() {
         return "SdxClusterResponse{" +
@@ -246,6 +256,7 @@ public class SdxClusterResponse {
                 ", Detached=" + detached +
                 ", enableMultiAz=" + enableMultiAz +
                 ", databaseEngineVersion=" + databaseEngineVersion +
+                ", customInstanceTypes=" + customInstanceTypes +
                 '}';
     }
 }

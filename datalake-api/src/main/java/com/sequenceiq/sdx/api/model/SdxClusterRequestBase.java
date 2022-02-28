@@ -31,6 +31,8 @@ public class SdxClusterRequestBase implements TaggableRequest {
 
     private boolean enableMultiAz;
 
+    private Map<String, String> customInstanceTypes;
+
     public String getEnvironment() {
         return environment;
     }
@@ -119,6 +121,14 @@ public class SdxClusterRequestBase implements TaggableRequest {
         this.azure = azure;
     }
 
+    public Map<String, String> getCustomInstanceTypes() {
+        return customInstanceTypes;
+    }
+
+    public void setCustomInstanceTypes(Map<String, String> customInstanceTypes) {
+        this.customInstanceTypes = customInstanceTypes;
+    }
+
     public void copyTo(SdxClusterRequestBase toInstance) {
         toInstance.setEnvironment(environment);
         toInstance.setClusterShape(clusterShape);
@@ -128,6 +138,7 @@ public class SdxClusterRequestBase implements TaggableRequest {
         toInstance.setAws(aws);
         toInstance.setEnableRangerRaz(enableRangerRaz);
         toInstance.setEnableMultiAz(enableMultiAz);
+        toInstance.setCustomInstanceTypes(customInstanceTypes);
     }
 
     @Override
